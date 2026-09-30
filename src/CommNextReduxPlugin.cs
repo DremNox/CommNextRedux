@@ -1,5 +1,5 @@
 using System;
-using System.Reflection;
+using HarmonyLib;
 using KSP.Game;
 using KSP.Sim.impl;
 using Redux.ExtraModTypes;
@@ -12,21 +12,28 @@ namespace CommNextRedux
     public sealed class CommNextReduxPlugin : KerbalMod
     {
         private ILogger _log;
-        private Rect _window = new Rect(25f, 80f, 420f, 210f);
+        private Harmony _harmony;
+        private Rect _window = new Rect(25f, 80f, 460f, 260f);
         private bool _visible = true;
         private VesselComponent _vessel;
-        private string _commNetStatus = "Pendiente";
+        private string _connectionStatus = "Sin datos";
+        private double _rangeMeters;
+        private double _distanceMeters = -1d;
+        private int _nodeCount;
         private float _nextRefresh;
 
         public override void OnPreInitialized()
         {
             _log = SWLogger;
-            _log.LogInfo("[CommNextRedux] 0.0.2 pre-initialized");
+            CommNetBridge.Log = _log;
+            _log.LogInfo("[CommNextRedux] 0.0.3 pre-initialized");
         }
 
         public override void OnInitialized()
         {
-            _log.LogInfo("[CommNextRedux] 0.0.2 initialized");
+            _harmony = new Harmony("DremNox.CommNextRedux");
+            _harmony.PatchAll(typeof(CommNextReduxPlugin).Assembly);
+            _log.LogInfo("[CommNextRedux] 0.0.3 initialized; CommNet patches active");
             RefreshState();
         }
 
@@ -37,7 +44,7 @@ namespace CommNextRedux
 
             if (Time.unscaledTime >= _nextRefresh)
             {
-                _nextRefresh = Time.unscaledTime + 1f;
+                _nextRefresh = Time.unscaledTime + 0.5f;
                 RefreshState();
             }
         }
@@ -51,27 +58,27 @@ namespace CommNextRedux
                     ? null
                     : game.ViewController.GetActiveSimVessel(false);
 
-                var property = game == null
-                    ? null
-                    : game.GetType().GetProperty("CommNetManager",
-                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                _nodeCount = CommNetBridge.NodeCount;
 
-                var field = game == null
-                    ? null
-                    : game.GetType().GetField("_commNetManager",
-                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-
-                var manager = property != null
-                    ? property.GetValue(game, null)
-                    : (field == null ? null : field.GetValue(game));
-
-                _commNetStatus = manager == null
-                    ? "CommNetManager no expuesto directamente"
-                    : "CommNetManager detectado: " + manager.GetType().FullName;
+                string status;
+                double range;
+                double distance;
+                if (CommNetBridge.TryGetVesselInfo(_vessel, out status, out range, out distance))
+                {
+                    _connectionStatus = status;
+                    _rangeMeters = range;
+                    _distanceMeters = distance;
+                }
+                else
+                {
+                    _connectionStatus = _vessel == null ? "Sin nave activa" : "CommNet no disponible";
+                    _rangeMeters = 0d;
+                    _distanceMeters = -1d;
+                }
             }
             catch (Exception ex)
             {
-                _commNetStatus = "Error inspeccionando CommNet";
+                _connectionStatus = "Error leyendo CommNet";
                 _log.LogError("[CommNextRedux] RefreshState: " + ex);
             }
         }
@@ -79,17 +86,31 @@ namespace CommNextRedux
         private void OnGUI()
         {
             if (!_visible || _vessel == null) return;
-            _window = GUI.Window(728431, _window, DrawWindow, "CommNext Redux 0.0.2");
+            _window = GUI.Window(728431, _window, DrawWindow, "CommNext Redux 0.0.3");
         }
 
         private void DrawWindow(int id)
         {
-            GUILayout.Label("Port inicial KSP2 Redux");
-            GUILayout.Label(_vessel == null ? "Nave activa: ninguna" : "Nave activa: " + _vessel.DisplayName);
-            GUILayout.Label(_commNetStatus);
+            GUILayout.Label("Nucleo CommNet Redux");
+            GUILayout.Label("Nave: " + _vessel.DisplayName);
+            GUILayout.Label("Conexion: " + _connectionStatus);
+            GUILayout.Label("Rango antena: " + FormatDistance(_rangeMeters));
+            GUILayout.Label("Distancia de red: " +
+                (_distanceMeters < 0d ? "sin ruta" : FormatDistance(_distanceMeters)));
+            GUILayout.Label("Nodos CommNet: " + _nodeCount);
+            GUILayout.Label("Manager: " + (CommNetBridge.IsAttached ? "conectado" : "pendiente"));
             GUILayout.Space(5f);
             GUILayout.Label("Alt+C: mostrar / ocultar");
             GUI.DragWindow(new Rect(0f, 0f, _window.width, 25f));
+        }
+
+        private static string FormatDistance(double meters)
+        {
+            if (meters < 0d) return "-";
+            if (meters >= 1_000_000_000d) return (meters / 1_000_000_000d).ToString("F2") + " Gm";
+            if (meters >= 1_000_000d) return (meters / 1_000_000d).ToString("F2") + " Mm";
+            if (meters >= 1_000d) return (meters / 1_000d).ToString("F1") + " km";
+            return meters.ToString("F0") + " m";
         }
     }
 }
