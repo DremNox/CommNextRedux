@@ -32,7 +32,7 @@ namespace CommNextRedux
 
         internal static VisualElement BuildVesselReport()
         {
-            var root = Box("root", 420, 510);
+            var root = Box("root", 420, 548);
             root.style.paddingLeft = 10;
             root.style.paddingRight = 10;
             root.style.paddingTop = 8;
@@ -99,6 +99,21 @@ namespace CommNextRedux
             StyleSmallButton(direction, 34);
             controls.Add(direction);
             root.Add(controls);
+
+            var signalControlRow = Row();
+            signalControlRow.style.height = 32;
+            signalControlRow.style.marginBottom = 6;
+
+            var signalControlLabel = new Label("CONTROL SIN SEÑAL");
+            signalControlLabel.style.width = 145;
+            signalControlLabel.style.fontSize = 10;
+            signalControlLabel.style.color = Muted;
+            signalControlRow.Add(signalControlLabel);
+
+            var signalControl = new DropdownField { name = "control-mode-dropdown" };
+            signalControl.style.flexGrow = 1;
+            signalControlRow.Add(signalControl);
+            root.Add(signalControlRow);
 
             var list = new ScrollView { name = "connections-list" };
             list.style.flexGrow = 1;
