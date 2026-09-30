@@ -10,12 +10,14 @@ namespace CommNextRedux.Network
         internal bool HasEnoughResources { get; set; }
         internal double[] BandRanges { get; private set; }
         internal string VesselName { get; set; }
+        internal string TransmitterSummary { get; set; }
 
         internal NetworkNode(IGGuid owner)
         {
             Owner = owner;
             HasEnoughResources = true;
             VesselName = "N/A";
+            TransmitterSummary = "sin transmisores";
             BandRanges = new double[NetworkBands.Instance.AllBands.Count];
         }
 
