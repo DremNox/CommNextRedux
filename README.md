@@ -1,29 +1,55 @@
 # CommNext Redux
 
-Port comunitario de CommNext para Kerbal Space Program 2 Redux.
+Port de [CommNext](https://github.com/Kerbalight/CommNext) a **Kerbal Space Program 2 Redux**.
 
-Upstream: https://github.com/Kerbalight/CommNext
+## Estado actual: v0.1.0-preview.1
 
-## v0.0.9
+Esta preview integra el codigo original de CommNext sobre un nucleo adaptado a Redux.
 
-- Carga nativa como KerbalMod.
-- Hook a KSP.Game.CommNetManager.
-- Ventana de diagnostico solo en vuelo, nunca en VAB/OAB.
-- Distancia fisica directa al nodo KSC.
-- Correccion del nodo origen KSC y rango base de 2 Gm.
-- Registro de nodos CommNet.
+Incluye:
+
+- Red CommNext autoritativa sobre CommNetManager de Redux.
+- Oclusion por cuerpos celestes.
+- Rutas KSC -> relay -> nave.
 - Bandas X / S / K / Ka / V.
-- Modulos Relay y Modulator portados.
-- Patches de rangos de antenas originales.
-- Consumo electrico de relÃ©s.
-- Calculador paralelo de rutas CommNext con bandas, relÃ©s y oclusion planetaria.
+- Rangos originales de CommNext.
+- Relay y Modulator en PAM mediante Patch Manager Lua.
+- Consumo electrico de relays.
+- UI Toolkit original de CommNext.
+- Toolbar de mapa.
+- Vessel Report.
+- Filtros, ordenacion y signal strength.
+- Renderer original de conexiones.
+- Rulers de alcance.
+- Tooltips y controles UI originales.
+- Assets y localizaciones originales.
+- Persistencia de estado de la UI.
+- Fallbacks Redux para APIs privadas/renombradas.
 
-El calculador CommNext todavia funciona en paralelo al ConnectionGraph vanilla. La siguiente fase es integrar sus resultados en el grafo real de Redux y restaurar renderizado/UI original.
+La antigua ventana IMGUI de diagnostico queda oculta por defecto.
+
+## Fuente
+
+El port completo esta en:
+
+- `src-full/Original`: codigo original adaptado.
+- `src-full/ReduxCore`: nucleo de compatibilidad Redux.
+- `src-full/Compat`: adaptadores para APIs antiguas.
+- `src-full/UnityControls`: controles UI originales.
+- `patches/commnext_modules.lua`: inyeccion Redux de Relay/Modulator.
+
+El script `build-full.ps1` construye la DLL completa.
 
 ## Instalacion
 
-Descarga la ultima release y copia la carpeta CommNextRedux dentro de <KSP2>/mods/.
+Descarga la ultima release preview y copia `CommNextRedux` dentro de:
 
-## Licencia
+`<KSP2>/mods/`
 
-Se conserva la licencia MIT y atribucion del proyecto original.
+Requiere Redux / SpaceWarp2.
+
+## Upstream y licencia
+
+CommNext original: https://github.com/Kerbalight/CommNext
+
+Se conserva la licencia MIT y la atribucion del proyecto original.
