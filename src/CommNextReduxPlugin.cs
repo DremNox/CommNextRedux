@@ -30,14 +30,14 @@ namespace CommNextRedux
         {
             _log = SWLogger;
             CommNetBridge.Log = _log;
-            _log.LogInfo("[CommNextRedux] 0.0.14 pre-initialized");
+            _log.LogInfo("[CommNextRedux] 0.0.15 pre-initialized");
         }
 
         public override void OnInitialized()
         {
             _harmony = new Harmony("DremNox.CommNextRedux");
             _harmony.PatchAll(typeof(CommNextReduxPlugin).Assembly);
-            _log.LogInfo("[CommNextRedux] 0.0.14 initialized; map-state separation and authoritative source-index routing active");
+            _log.LogInfo("[CommNextRedux] 0.0.15 initialized; KSC source-active fix and transmitter diagnostics active");
             RefreshState();
         }
 
@@ -110,7 +110,7 @@ namespace CommNextRedux
         private void OnGUI()
         {
             if (!_visible || !_showWindowScene || _vessel == null) return;
-            _window = GUI.Window(728431, _window, DrawWindow, "CommNext Redux 0.0.14");
+            _window = GUI.Window(728431, _window, DrawWindow, "CommNext Redux 0.0.15");
         }
 
         private void DrawWindow(int id)
@@ -124,6 +124,7 @@ namespace CommNextRedux
             GUILayout.Label("Nodos CommNet: " + _nodeCount);
             GUILayout.Label("Rango origen/KSC: " + FormatDistance(CommNetBridge.SourceRangeMeters));
             GUILayout.Label("Bandas nave: " + CommNetBridge.GetBandSummary(_vessel));
+            GUILayout.Label("Antenas: " + CommNetBridge.GetTransmitterSummary(_vessel));
             GUILayout.Label("Ruta CommNext: " + (_route.Connected ? "conectada" : _route.Reason));
             if (_route.Connected)
             {
@@ -157,6 +158,7 @@ namespace CommNextRedux
                 var sourceControl = source != null && source.IsControlSource;
                 var targetActive = target != null && target.IsActive;
                 var bands = CommNetBridge.GetBandSummary(_vessel);
+                var transmitters = CommNetBridge.GetTransmitterSummary(_vessel);
 
                 var key = (_route.Connected ? "C" : "D") + "|" +
                     _route.Reason + "|" +
@@ -180,6 +182,7 @@ namespace CommNextRedux
                     " sourceControl=" + sourceControl +
                     " targetActive=" + targetActive +
                     " bands=" + bands +
+                    " transmitters=" + transmitters +
                     " directDistance=" + _distanceMeters.ToString("F0") +
                     " nodes=" + _nodeCount);
             }
