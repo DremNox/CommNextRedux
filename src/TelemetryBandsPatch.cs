@@ -88,6 +88,7 @@ namespace CommNextRedux
                 networkNode.IsRelay = isRelay;
                 networkNode.HasEnoughResources = hasEnoughResources;
                 networkNode.SetBandRanges(bandRanges);
+                ManagedCommNextGraph.Invalidate();
             }
             catch (Exception ex)
             {
