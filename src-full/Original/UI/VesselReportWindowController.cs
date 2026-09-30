@@ -206,7 +206,12 @@ public class VesselReportWindowController : MonoBehaviour
             return;
         }
 
-        var vesselMaxRange = _vessel.SimulationObject.Telemetry.CommNetRangeMeters;
+        // CommNetRangeMeters applies KSP2's vanilla antenna-combination formula.
+        // CommNext uses per-band ranges, so the report must show the strongest
+        // available CommNext band instead (e.g. RA-100 X band = 100 Gm).
+        var vesselMaxRange = networkNode.BandRanges.Length == 0
+            ? 0d
+            : networkNode.BandRanges.Max();
 
         _nameLabel.text = _vessel!.Name;
         _rangeLabel.text = LocalizationManager.GetTranslation(LocalizedStrings.RangeLabelKey, [
