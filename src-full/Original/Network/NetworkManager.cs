@@ -178,7 +178,9 @@ public class NetworkManager
             {
                 legacy.IsRelay = redux.IsRelay;
                 legacy.HasEnoughResources = redux.HasEnoughResources;
-                legacy.VesselName = redux.VesselName;
+                legacy.VesselName = IsSourceNode(graphNode.Owner)
+                    ? "KSC"
+                    : redux.VesselName;
 
                 var ranges = new Dictionary<int, double>();
                 for (var i = 0; i < redux.BandRanges.Length; i++)
@@ -253,29 +255,55 @@ public class NetworkManager
             var inboundActive = _previousIndices[nodeIndex] == i;
 
             var shouldAddOutbound = ShouldInclude(outbound, outboundActive, nodesFilter);
-            if (shouldAddOutbound && Nodes.TryGetValue(_graphNodes[i].Owner, out var target))
-            {
-                result.Add(new NetworkConnection(
-                    networkNode,
-                    target,
-                    _graphNodes[nodeIndex],
-                    _graphNodes[i],
-                    outbound,
-                    outboundActive));
-            }
-
             var shouldAddInbound = ShouldInclude(inbound, inboundActive, nodesFilter);
-            if (shouldAddInbound &&
-                Nodes.TryGetValue(_graphNodes[i].Owner, out var sourceNode) &&
-                (!hasActivePath || inboundActive || nodesFilter != VesselNodesFilter.Active))
+
+            if (!Nodes.TryGetValue(_graphNodes[i].Owner, out var otherNode))
+                continue;
+
+            // Redux' compatibility graph is evaluated in both directions, while the
+            // current CommNext link properties are symmetric. Showing both entries
+            // produces duplicate rows for the same remote vessel. Keep one row and
+            // prefer the direction that belongs to the active route when available.
+            if (inboundActive && shouldAddInbound)
             {
                 result.Add(new NetworkConnection(
-                    sourceNode,
+                    otherNode,
                     networkNode,
                     _graphNodes[i],
                     _graphNodes[nodeIndex],
                     inbound,
-                    inboundActive));
+                    true));
+            }
+            else if (outboundActive && shouldAddOutbound)
+            {
+                result.Add(new NetworkConnection(
+                    networkNode,
+                    otherNode,
+                    _graphNodes[nodeIndex],
+                    _graphNodes[i],
+                    outbound,
+                    true));
+            }
+            else if (shouldAddOutbound)
+            {
+                result.Add(new NetworkConnection(
+                    networkNode,
+                    otherNode,
+                    _graphNodes[nodeIndex],
+                    _graphNodes[i],
+                    outbound,
+                    false));
+            }
+            else if (shouldAddInbound &&
+                     (!hasActivePath || nodesFilter != VesselNodesFilter.Active))
+            {
+                result.Add(new NetworkConnection(
+                    otherNode,
+                    networkNode,
+                    _graphNodes[i],
+                    _graphNodes[nodeIndex],
+                    inbound,
+                    false));
             }
         }
 
