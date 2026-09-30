@@ -8,6 +8,7 @@ using CommNext.UI.Logic;
 using CommNext.UI.Screen;
 using CommNext.UI.Tooltip;
 using CommNext.UI.Utils;
+using CommNext.Utils;
 using CommNext.Unity.Runtime.Controls;
 using I2.Loc;
 using KSP;
@@ -49,6 +50,7 @@ public class VesselReportWindowController : MonoBehaviour
     private Button _focusButton = null!;
     private DropdownField _filterDropdown = null!;
     private DropdownField _sortDropdown = null!;
+    private DropdownField _controlModeDropdown = null!;
     private SortDirectionButton _sortDirectionButton = null!;
     private readonly ConnectionsQuery _query = new();
 
@@ -170,6 +172,15 @@ public class VesselReportWindowController : MonoBehaviour
         _filterDropdown.AddTooltip(LocalizedStrings.FilterLabel);
         _sortDropdown = _root.Q<DropdownField>("sort-dropdown");
         _sortDropdown.AddTooltip(LocalizedStrings.SortLabel);
+
+        _controlModeDropdown = _root.Q<DropdownField>("control-mode-dropdown");
+        _controlModeDropdown.choices = new List<string> { "KSP2 / Parcial", "Estricto" };
+        _controlModeDropdown.SetValueWithoutNotify(
+            PluginSettings.SignalLossControl.Value == PluginSettings.SignalLossControlMode.Strict
+                ? "Estricto"
+                : "KSP2 / Parcial");
+        _controlModeDropdown.RegisterValueChangedCallback(OnControlModeChanged);
+
         _sortDirectionButton = _root.Q<SortDirectionButton>("sort-direction-button");
         _query.BindFilter(_filterDropdown);
         _query.BindSort(_sortDropdown);
@@ -193,6 +204,23 @@ public class VesselReportWindowController : MonoBehaviour
         if (_vessel == null) return;
         var instance = ConnectionsRenderer.Instance;
         if (instance != null) instance.FocusOnMap(_vessel.GlobalId);
+    }
+
+    private static string GetControlModeLabel()
+    {
+        return PluginSettings.SignalLossControl.Value == PluginSettings.SignalLossControlMode.Strict
+            ? "Estricto"
+            : "KSP2 / Parcial";
+    }
+
+    private void OnControlModeChanged(ChangeEvent<string> evt)
+    {
+        PluginSettings.SignalLossControl.Value =
+            evt.newValue == "Estricto"
+                ? PluginSettings.SignalLossControlMode.Strict
+                : PluginSettings.SignalLossControlMode.KSP2Partial;
+
+        Logger.LogInfo($"Signal loss control mode: {PluginSettings.SignalLossControl.Value}");
     }
 
     private void BuildUI()
@@ -219,6 +247,9 @@ public class VesselReportWindowController : MonoBehaviour
                 .RTEColor("#E7CA76")
         ]);
         _powerIcon.style.display = networkNode.HasEnoughResources ? DisplayStyle.None : DisplayStyle.Flex;
+
+        if (_controlModeDropdown != null)
+            _controlModeDropdown.SetValueWithoutNotify(GetControlModeLabel());
 
         var connections = NetworkManager.Instance.GetNodeConnections(networkNode, _query.Filter);
         _query.ApplySort(networkNode, connections);
