@@ -1,6 +1,7 @@
 using System;
 using KSP.Sim;
 using KSP.Sim.Definitions;
+using KSP.Game;
 using KSP.Sim.ResourceSystem;
 
 namespace CommNextRedux.Modules
@@ -17,6 +18,34 @@ namespace CommNextRedux.Modules
 
         [KSPDefinition]
         public PartModuleResourceSetting RequiredResource;
+
+        public ResourceFlowRequestCommandConfig RequestConfig;
+
+        public override void SetupResourceRequest(ResourceFlowRequestBroker resourceFlowRequestBroker)
+        {
+            if (RequiredResource.ResourceName == null)
+                return;
+
+            var resourceId =
+                GameManager.Instance.Game.ResourceDefinitionDatabase.GetResourceIDFromName(RequiredResource.ResourceName);
+
+            if (resourceId == ResourceDefinitionID.InvalidID)
+            {
+                CommNetBridge.Log?.LogError("[CommNextRedux] Resource not found: " + RequiredResource.ResourceName);
+                return;
+            }
+
+            RequestConfig = new ResourceFlowRequestCommandConfig
+            {
+                FlowResource = resourceId,
+                FlowDirection = FlowDirection.FLOW_OUTBOUND,
+                FlowUnits = 0.0
+            };
+
+            RequestHandle = resourceFlowRequestBroker.AllocateOrGetRequest("ModuleCommNextRelay", default);
+            resourceFlowRequestBroker.SetCommands(RequestHandle, 1.0,
+                new ResourceFlowRequestCommandConfig[] { RequestConfig });
+        }
 
         public override void OnPartBehaviourModuleInit()
         {
