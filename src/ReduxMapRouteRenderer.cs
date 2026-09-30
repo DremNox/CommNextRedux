@@ -29,7 +29,6 @@ namespace CommNextRedux
                     state.GameState != GameState.Map3DView ||
                     vessel == null ||
                     route == null ||
-                    !route.Connected ||
                     route.RouteOwners.Count < 2)
                 {
                     Clear();
@@ -79,17 +78,19 @@ namespace CommNextRedux
                     line = obj.AddComponent<LineRenderer>();
                     line.useWorldSpace = true;
                     line.positionCount = 2;
-                    line.startWidth = 0.045f;
-                    line.endWidth = 0.045f;
+                    line.startWidth = 0.07f;
+                    line.endWidth = 0.07f;
                     line.numCapVertices = 2;
                     line.material = GetLineMaterial();
                     Lines[id] = line;
                 }
 
                 var bandIndex = i < route.RouteBands.Count ? route.RouteBands[i] : -1;
-                var color = bandIndex >= 0 && bandIndex < NetworkBands.Instance.AllBands.Count
-                    ? NetworkBands.Instance.AllBands[bandIndex].Color
-                    : Color.white;
+                var color = !route.Connected
+                    ? new Color(1f, 0.25f, 0.20f, 0.95f)
+                    : bandIndex >= 0 && bandIndex < NetworkBands.Instance.AllBands.Count
+                        ? NetworkBands.Instance.AllBands[bandIndex].Color
+                        : Color.white;
 
                 line.startColor = color;
                 line.endColor = color;
