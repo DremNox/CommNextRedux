@@ -4,16 +4,16 @@ Port comunitario de [CommNext](https://github.com/Kerbalight/CommNext) para **Ke
 
 ## Estado actual
 
-**v0.0.4 - nucleo CommNet + origen KSC**
+**v0.0.5 - nucleo CommNet + KSC + bandas/nodos**
 
 - Carga como `KerbalMod` nativo de Redux.
-- Detecta la nave activa.
-- Se engancha al `KSP.Game.CommNetManager` real mediante Harmony.
-- Lee estado CommNet, rango de antena, distancia de red y numero de nodos.
-- Porta el tratamiento original del nodo origen de KSC.
-- Corrige la posicion del origen CommNet sobre KSC.
-- Aplica el rango base original de KSC: 2 Gm.
-- La ventana solo aparece con una nave activa.
+- Hook real a `KSP.Game.CommNetManager` mediante Harmony.
+- Estado CommNet, rango de antena, distancia de red y numero de nodos.
+- Correccion del nodo origen sobre KSC y rango base de 2 Gm.
+- Registro propio de nodos sincronizado con RegisterNode/UnregisterNode.
+- Catalogo original de bandas: X, S, K, Ka y V.
+- Los nodos vanilla se registran inicialmente en banda X con su rango real.
+- UI oculta fuera de vuelo.
 
 ## Proyecto original
 
