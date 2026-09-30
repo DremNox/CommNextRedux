@@ -62,6 +62,8 @@ public static class MessageListener
         {
             IsInMapView = false;
             MainUIManager.Instance.MapToolbarWindow!.IsWindowOpen = false;
+            if (MainUIManager.Instance.RangePreviewWindow != null)
+                MainUIManager.Instance.RangePreviewWindow.IsWindowOpen = false;
         }
     }
 
@@ -70,6 +72,8 @@ public static class MessageListener
         SaveManager.Instance.SaveNow();
         IsInMapView = false;
         MainUIManager.Instance.MapToolbarWindow!.IsWindowOpen = false;
+        if (MainUIManager.Instance.RangePreviewWindow != null)
+            MainUIManager.Instance.RangePreviewWindow.IsWindowOpen = false;
     }
 
     /// <summary>
