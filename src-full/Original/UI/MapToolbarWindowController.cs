@@ -1,3 +1,4 @@
+using System.Collections;
 using BepInEx.Logging;
 using CommNext.Rendering;
 using CommNext.UI.Screen;
@@ -49,14 +50,17 @@ public class MapToolbarWindowController : MonoBehaviour
     public float Height => _root.resolvedStyle.height;
 
     private bool _isWindowPositionInitialized;
+    private bool _isUiInitialized;
+    private Vector3 _pendingPosition;
 
     public Vector3 Position
     {
-        get => _root.transform.position;
+        get => _root != null ? _root.transform.position : _pendingPosition;
         set
         {
             _isWindowPositionInitialized = true;
-            _root.transform.position = value;
+            _pendingPosition = value;
+            if (_root != null) _root.transform.position = value;
         }
     }
 
@@ -68,14 +72,18 @@ public class MapToolbarWindowController : MonoBehaviour
         set
         {
             _isWindowOpen = value;
-            _root.style.display = _isWindowOpen ? DisplayStyle.Flex : DisplayStyle.None;
+            if (!_isUiInitialized || _root == null) return;
 
+            _root.style.display = _isWindowOpen ? DisplayStyle.Flex : DisplayStyle.None;
             if (_isWindowOpen) UpdateButtonState();
         }
     }
 
     public void UpdateButtonState()
     {
+        if (!_isUiInitialized || _linesButton == null || _rulersButton == null || _vesselReportButton == null)
+            return;
+
         // 1. Connections
         // TODO Move the _state_ inside a separate object like `ConnectionsRenderState`, which is not tied to MonoBehaviour lifecycle.
         var connectionsDisplayMode =
@@ -136,12 +144,29 @@ public class MapToolbarWindowController : MonoBehaviour
     /// </summary>
     private void OnEnable()
     {
-        // Get the UIDocument component from the game object
         _window = GetComponent<UIDocument>();
+        StartCoroutine(InitializeWhenVisualTreeReady());
+    }
+
+    private IEnumerator InitializeWhenVisualTreeReady()
+    {
+        const int maxFrames = 120;
+        var frame = 0;
+
+        while ((_window == null || _window.rootVisualElement == null ||
+                _window.rootVisualElement.childCount == 0) && frame++ < maxFrames)
+            yield return null;
+
+        if (_window == null || _window.rootVisualElement == null ||
+            _window.rootVisualElement.childCount == 0)
+        {
+            Logger.LogError("Map toolbar UXML was not instantiated after waiting for UI Toolkit.");
+            yield break;
+        }
 
         _root = _window.rootVisualElement[0];
         _root.SetDefaultPosition(size => _isWindowPositionInitialized
-            ? _root.transform.position
+            ? _pendingPosition
             : new Vector2(
                 UIScreenUtils.GetReferenceScreenScaledWidth() - size.x -
                 UIScreenUtils.GetScaledReferenceCoordinate(28f),
@@ -189,6 +214,13 @@ public class MapToolbarWindowController : MonoBehaviour
             MainUIManager.Instance.VesselReportWindow!.OpenForVessel(vessel);
         };
 
-        IsWindowOpen = false;
+        _isUiInitialized = true;
+        if (_isWindowPositionInitialized)
+            _root.transform.position = _pendingPosition;
+
+        _root.style.display = _isWindowOpen ? DisplayStyle.Flex : DisplayStyle.None;
+        if (_isWindowOpen) UpdateButtonState();
+
+        Logger.LogInfo("Map toolbar UI initialized.");
     }
 }
