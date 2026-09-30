@@ -238,6 +238,18 @@ namespace CommNextRedux
                 {
                     connectionStatus = telemetry.CommNetConnectionStatus.ToString();
                     rangeMeters = telemetry.CommNetRangeMeters;
+
+                    NetworkNode networkNode;
+                    if (Nodes.TryGetValue(vessel.GlobalId, out networkNode))
+                    {
+                        var effective = 0d;
+                        foreach (var bandRange in networkNode.BandRanges)
+                            if (bandRange > effective)
+                                effective = bandRange;
+
+                        if (effective > 0d)
+                            rangeMeters = effective;
+                    }
                 }
 
                 if (Manager != null && telemetry != null && telemetry.CommNetNode != null)
