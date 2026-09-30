@@ -26,14 +26,14 @@ namespace CommNextRedux
         {
             _log = SWLogger;
             CommNetBridge.Log = _log;
-            _log.LogInfo("[CommNextRedux] 0.0.4 pre-initialized");
+            _log.LogInfo("[CommNextRedux] 0.0.5 pre-initialized");
         }
 
         public override void OnInitialized()
         {
             _harmony = new Harmony("DremNox.CommNextRedux");
             _harmony.PatchAll(typeof(CommNextReduxPlugin).Assembly);
-            _log.LogInfo("[CommNextRedux] 0.0.4 initialized; CommNet and KSC patches active");
+            _log.LogInfo("[CommNextRedux] 0.0.5 initialized; CommNet, KSC and band registry active");
             RefreshState();
         }
 
@@ -86,7 +86,7 @@ namespace CommNextRedux
         private void OnGUI()
         {
             if (!_visible || _vessel == null) return;
-            _window = GUI.Window(728431, _window, DrawWindow, "CommNext Redux 0.0.4");
+            _window = GUI.Window(728431, _window, DrawWindow, "CommNext Redux 0.0.5");
         }
 
         private void DrawWindow(int id)
@@ -99,6 +99,7 @@ namespace CommNextRedux
                 (_distanceMeters < 0d ? "sin ruta" : FormatDistance(_distanceMeters)));
             GUILayout.Label("Nodos CommNet: " + _nodeCount);
             GUILayout.Label("Rango origen/KSC: " + FormatDistance(CommNetBridge.SourceRangeMeters));
+            GUILayout.Label("Bandas nave: " + CommNetBridge.GetBandSummary(_vessel));
             GUILayout.Label("Manager: " + (CommNetBridge.IsAttached ? "conectado" : "pendiente"));
             GUILayout.Space(5f);
             GUILayout.Label("Alt+C: mostrar / ocultar");
