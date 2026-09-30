@@ -17,6 +17,8 @@ namespace CommNextRedux
             typeof(CommNetManager).GetField("_allNodes",
                 BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
 
+        private const double DefaultKscRangeMeters = 2_000_000_000d;
+
         private static readonly MethodInfo RefreshCommNetNodeMethod =
             typeof(TelemetryComponent).GetMethod("RefreshCommNetNode",
                 BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
@@ -47,7 +49,9 @@ namespace CommNextRedux
                 try
                 {
                     var source = Manager == null ? null : Manager.GetSourceNode();
-                    return source == null ? 0d : source.MaxRange;
+                    if (source == null) return 0d;
+                    EnsureSourceNode(source);
+                    return source.MaxRange;
                 }
                 catch
                 {
@@ -135,7 +139,23 @@ namespace CommNextRedux
                     Nodes[graphNode.Owner] = node;
                 }
 
-                node.SetVanillaRange(graphNode.MaxRange);
+                var source = Manager == null ? null : Manager.GetSourceNode();
+                var isSource = source != null && source.Owner == graphNode.Owner;
+
+                if (isSource)
+                {
+                    EnsureSourceNode(graphNode);
+                    var sourceBands = new Dictionary<int, double>();
+                    for (var i = 0; i < NetworkBands.Instance.AllBands.Count; i++)
+                        sourceBands[i] = DefaultKscRangeMeters;
+                    node.SetBandRanges(sourceBands);
+                    node.VesselName = "KSC";
+                }
+                else
+                {
+                    node.SetVanillaRange(graphNode.MaxRange);
+                }
+
                 ManagedCommNextGraph.Invalidate();
 
                 if (!string.IsNullOrWhiteSpace(forcedName))
@@ -153,6 +173,13 @@ namespace CommNextRedux
             {
                 Log?.LogError("[CommNextRedux] Register node: " + ex);
             }
+        }
+
+        private static void EnsureSourceNode(ConnectionGraphNode source)
+        {
+            if (source == null) return;
+            if (Math.Abs(source.MaxRange - DefaultKscRangeMeters) > 1d)
+                source.MaxRange = DefaultKscRangeMeters;
         }
 
         internal static void UnregisterNode(ConnectionGraphNode graphNode)
