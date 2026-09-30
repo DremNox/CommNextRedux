@@ -30,7 +30,7 @@ namespace CommNextRedux
         {
             _log = SWLogger;
             CommNetBridge.Log = _log;
-            _log.LogInfo("[CommNextRedux] 0.1.0-preview.5 pre-initialized");
+            _log.LogInfo("[CommNextRedux] 0.1.0-preview.6 pre-initialized");
         }
 
         public override void OnInitialized()
@@ -47,9 +47,22 @@ namespace CommNextRedux
             Patch(typeof(CommNextConnectionDistancePatch));
             Patch(typeof(CommNext.Patches.SimulationObjectModelPatches));
 
+            // Optional strict signal-loss control mode.
+            Patch(typeof(StrictManualControlPatch));
+            Patch(typeof(StrictThrottleDeltaPatch));
+            Patch(typeof(StrictThrottleMinMaxPatch));
+            Patch(typeof(StrictManeuverControlPatch));
+            Patch(typeof(StrictStagingPermissionPatch));
+            Patch(typeof(StrictActivateNextStagePatch));
+            Patch(typeof(StrictSetAutopilotModePatch));
+            Patch(typeof(StrictSetAutopilotEnableDisablePatch));
+            Patch(typeof(StrictTriggerActionGroupPatch));
+            Patch(typeof(StrictSetActionGroupPatch));
+            Patch(typeof(StrictSetRcsPatch));
+
             FullPortBootstrap.Initialize();
 
-            _log.LogInfo("[CommNextRedux] 0.1.0-preview.5 initialized; original CommNext systems enabled");
+            _log.LogInfo("[CommNextRedux] 0.1.0-preview.6 initialized; original CommNext systems enabled");
             RefreshState();
         }
 
@@ -127,7 +140,7 @@ namespace CommNextRedux
         private void OnGUI()
         {
             if (!_visible || !_showWindowScene || _vessel == null) return;
-            _window = GUI.Window(728431, _window, DrawWindow, "CommNext Redux 0.1.0-preview.5 [debug]");
+            _window = GUI.Window(728431, _window, DrawWindow, "CommNext Redux 0.1.0-preview.6 [debug]");
         }
 
         private void DrawWindow(int id)
@@ -150,6 +163,7 @@ namespace CommNextRedux
                 GUILayout.Label(_route.Path);
             }
             GUILayout.Label("Manager: " + (CommNetBridge.IsAttached ? "conectado" : "pendiente"));
+            GUILayout.Label("Control sin señal: " + CommNext.Utils.PluginSettings.SignalLossControl.Value);
             GUILayout.Space(5f);
             GUILayout.Label("Alt+C: mostrar / ocultar");
             GUI.DragWindow(new Rect(0f, 0f, _window.width, 25f));
