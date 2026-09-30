@@ -23,14 +23,6 @@ namespace CommNextRedux
             root.style.paddingLeft = 5;
             root.style.paddingRight = 5;
 
-            var label = new Label("COMMNEXT");
-            label.style.position = Position.Absolute;
-            label.style.left = 7;
-            label.style.bottom = -10;
-            label.style.fontSize = 8;
-            label.style.color = new Color(0.55f, 0.57f, 1f, 1f);
-            root.Add(label);
-
             root.Add(ToolbarButton("lines-button", "NET"));
             root.Add(ToolbarButton("rulers-button", "RNG"));
             root.Add(ToolbarButton("vessel-report-button", "REP"));
