@@ -4,7 +4,7 @@
   "name": "CommNext Redux",
   "author": "DremNox / Kerbalight",
   "description": "Full port preview of CommNext for KSP2 Redux.",
-  "version": "0.1.0-preview.2",
+  "version": "0.1.0-preview.3",
   "ksp2_version": { "min": "*", "max": "*" },
   "dependencies": [
     {
