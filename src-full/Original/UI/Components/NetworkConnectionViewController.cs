@@ -83,7 +83,11 @@ public class NetworkConnectionViewController : UIToolkitElement, IPoolingElement
         _connection = connection;
 
         var otherNode = connection.GetOther(currentNode);
-        _nameLabel.text = otherNode.VesselName;
+        var sourceNode = NetworkManager.Instance.CommNetManager?.GetSourceNode();
+        var isGroundStation = sourceNode != null && otherNode.Owner == sourceNode.Owner;
+        _nameLabel.text = isGroundStation ? "KSC" : otherNode.VesselName;
+        _controlButton.style.display = isGroundStation ? DisplayStyle.None : DisplayStyle.Flex;
+
         _directionLabel.text = connection.IsSource(currentNode)
             ? LocalizedStrings.OutDirection
             : LocalizedStrings.InDirection;
