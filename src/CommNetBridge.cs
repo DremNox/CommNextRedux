@@ -3,6 +3,7 @@ using System.Collections;
 using System.Reflection;
 using HarmonyLib;
 using KSP.Game;
+using KSP.Sim;
 using KSP.Sim.impl;
 using ReduxLib.Logging;
 
@@ -18,6 +19,22 @@ namespace CommNextRedux
         internal static ILogger Log { get; set; }
 
         internal static bool IsAttached => Manager != null;
+
+        internal static double SourceRangeMeters
+        {
+            get
+            {
+                try
+                {
+                    var source = Manager == null ? null : Manager.GetSourceNode();
+                    return source == null ? 0d : source.MaxRange;
+                }
+                catch
+                {
+                    return 0d;
+                }
+            }
+        }
 
         internal static int NodeCount
         {
@@ -105,6 +122,44 @@ namespace CommNextRedux
         private static void Prefix(CommNetManager __instance)
         {
             CommNetBridge.Detach(__instance);
+        }
+    }
+
+    [HarmonyPatch(typeof(CommNetManager), nameof(CommNetManager.SetSourceNode), new Type[] { typeof(ConnectionGraphNode) })]
+    internal static class CommNetSourceNodePatch
+    {
+        private const string KerbinCommNetOriginName = "kerbin_CommNetOrigin";
+        private const string KerbinSpaceCenterName = "kerbin_KSC_Object";
+        private const double DefaultKscRangeMeters = 2_000_000_000d;
+
+        [HarmonyPostfix]
+        private static void Postfix(ConnectionGraphNode newSourceNode)
+        {
+            try
+            {
+                if (newSourceNode == null || GameManager.Instance == null || GameManager.Instance.Game == null)
+                    return;
+
+                var universe = GameManager.Instance.Game.UniverseModel;
+                var sourceObject = universe.FindSimObject(newSourceNode.Owner);
+                if (sourceObject == null || sourceObject.Name != KerbinCommNetOriginName)
+                    return;
+
+                var kscObject = universe.FindSimObjectByNameKey(KerbinSpaceCenterName);
+                if (kscObject == null)
+                {
+                    CommNetBridge.Log?.LogWarning("[CommNextRedux] KSC SimObject not found");
+                    return;
+                }
+
+                sourceObject.transform.Position = kscObject.transform.Position;
+                newSourceNode.MaxRange = DefaultKscRangeMeters;
+                CommNetBridge.Log?.LogInfo("[CommNextRedux] KSC CommNet source corrected; range 2 Gm");
+            }
+            catch (Exception ex)
+            {
+                CommNetBridge.Log?.LogError("[CommNextRedux] KSC source patch: " + ex);
+            }
         }
     }
 }
