@@ -16,6 +16,8 @@ namespace CommNextRedux
         internal int Hops;
         internal double TotalDistanceMeters;
         internal double GraphCost;
+        internal List<IGGuid> RouteOwners = new List<IGGuid>();
+        internal List<int> RouteBands = new List<int>();
         internal string Path = "sin ruta";
         internal string Reason = "";
     }
@@ -106,6 +108,7 @@ namespace CommNextRedux
                     result.Path = "KSC";
                     result.Reason = "Nodo origen";
                     result.GraphCost = 0d;
+                    result.RouteOwners.Add(sourceNode.Owner);
                     return result;
                 }
 
@@ -321,6 +324,10 @@ namespace CommNextRedux
                 result.Hops = indexes.Count - 1;
                 result.TotalDistanceMeters = physicalDistance;
                 result.GraphCost = sourceCosts[targetIndex];
+                foreach (var index in indexes)
+                    result.RouteOwners.Add(graphNodes[index].Owner);
+                foreach (var band in bands)
+                    result.RouteBands.Add(band);
                 result.Path = string.Join(" ", pathParts.ToArray());
                 result.Reason = "Ruta valida";
                 return result;
