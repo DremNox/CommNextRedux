@@ -36,6 +36,7 @@ namespace CommNextRedux
                 var isRelay = false;
                 var hasEnoughResources = true;
                 var bandRanges = new Dictionary<int, double>();
+                var transmitterStates = new List<string>();
 
                 foreach (var part in partOwner.Parts)
                 {
@@ -56,18 +57,25 @@ namespace CommNextRedux
                         continue;
 
                     var effectiveRange = GetCommNextRange(part.PartName, transmitter.CommunicationRangeMeters);
+                    var transmitterActive = transmitter.IsTransmitterActive();
+                    transmitterStates.Add(
+                        part.PartName + "=" + (transmitterActive ? "ON" : "OFF") +
+                        "@" + FormatRange(effectiveRange));
 
                     PartComponentModule_NextModulator modulator;
                     if (!part.TryGetModule<PartComponentModule_NextModulator>(out modulator))
                     {
-                        // Stock/fallback behavior: use X band.
+                        // Stock/fallback behavior: active stock transmitters use X band.
+                        if (!transmitterActive)
+                            continue;
+
                         var xIndex = NetworkBands.Instance.GetBandIndex(NetworkBands.DefaultBand);
                         if (xIndex >= 0)
                             SetMax(bandRanges, xIndex, effectiveRange);
                         continue;
                     }
 
-                    if (!transmitter.IsTransmitterActive())
+                    if (!transmitterActive)
                         continue;
 
                     var data = modulator.DataModulator;
@@ -92,6 +100,9 @@ namespace CommNextRedux
 
                 networkNode.IsRelay = isRelay;
                 networkNode.HasEnoughResources = hasEnoughResources;
+                networkNode.TransmitterSummary = transmitterStates.Count == 0
+                    ? "sin transmisores"
+                    : string.Join(" | ", transmitterStates.ToArray());
                 networkNode.SetBandRanges(bandRanges);
 
                 var effectiveNodeRange = 0d;
@@ -108,6 +119,14 @@ namespace CommNextRedux
             {
                 CommNetBridge.Log?.LogError("[CommNextRedux] Telemetry band refresh: " + ex);
             }
+        }
+
+        private static string FormatRange(double meters)
+        {
+            if (meters >= 1_000_000_000d) return (meters / 1_000_000_000d).ToString("F2") + "Gm";
+            if (meters >= 1_000_000d) return (meters / 1_000_000d).ToString("F2") + "Mm";
+            if (meters >= 1_000d) return (meters / 1_000d).ToString("F1") + "km";
+            return meters.ToString("F0") + "m";
         }
 
         private static double GetCommNextRange(string partName, double stockRange)
