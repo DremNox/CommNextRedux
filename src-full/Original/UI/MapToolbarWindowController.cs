@@ -108,6 +108,16 @@ public class MapToolbarWindowController : MonoBehaviour
             ConnectionsDisplayMode.Active => LocalizedStrings.ConnectionsDisplayModeActive,
             _ => "N/A"
         };
+        _linesButton.text = connectionsDisplayMode switch
+        {
+            ConnectionsDisplayMode.None => "NET OFF",
+            ConnectionsDisplayMode.Lines => "NET",
+            ConnectionsDisplayMode.Active => "NET ACT",
+            _ => "NET"
+        };
+        _linesButton.style.color = connectionsDisplayMode == ConnectionsDisplayMode.None
+            ? new Color(0.82f, 0.85f, 0.91f, 1f)
+            : new Color(0.10f, 1f, 0.40f, 1f);
 
 
         // 2. Rulers
@@ -131,12 +141,31 @@ public class MapToolbarWindowController : MonoBehaviour
             RulersDisplayMode.All => LocalizedStrings.RulersDisplayModeAll,
             _ => "N/A"
         };
+        _rulersButton.text = rulersDisplayMode switch
+        {
+            RulersDisplayMode.None => "RNG OFF",
+            RulersDisplayMode.Relays => "RNG R",
+            RulersDisplayMode.All => "RNG ALL",
+            _ => "RNG"
+        };
+        _rulersButton.style.color = rulersDisplayMode == RulersDisplayMode.None
+            ? new Color(0.82f, 0.85f, 0.91f, 1f)
+            : new Color(0.10f, 1f, 0.40f, 1f);
 
         // 3. Vessel report
         // ReSharper disable once Unity.NoNullPropagation
         if (MainUIManager.Instance.VesselReportWindow?.IsWindowOpen == true)
+        {
             _vesselReportButton.AddToClassList("toggled");
-        else _vesselReportButton.RemoveFromClassList("toggled");
+            _vesselReportButton.text = "REP ON";
+            _vesselReportButton.style.color = new Color(0.10f, 1f, 0.40f, 1f);
+        }
+        else
+        {
+            _vesselReportButton.RemoveFromClassList("toggled");
+            _vesselReportButton.text = "REP";
+            _vesselReportButton.style.color = new Color(0.82f, 0.85f, 0.91f, 1f);
+        }
     }
 
     /// <summary>
