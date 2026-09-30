@@ -251,7 +251,40 @@ namespace CommNextRedux
 
                 if (previous[targetIndex] < 0)
                 {
-                    result.Reason = "Sin ruta compatible";
+                    // Expose the direct KSC -> vessel attempt so the map renderer can
+                    // still show why there is no valid route.
+                    var sourceGraph = graphNodes[sourceIndex];
+                    var targetGraph = graphNodes[targetIndex];
+                    var directDistanceSq = DistanceSquared(sourceGraph.Position, targetGraph.Position);
+                    var directDistance = directDistanceSq > 0d ? Math.Sqrt(directDistanceSq) : 0d;
+
+                    result.RouteOwners.Add(sourceGraph.Owner);
+                    result.RouteOwners.Add(targetGraph.Owner);
+                    result.TotalDistanceMeters = directDistance;
+
+                    NetworkNode sourceNetwork;
+                    NetworkNode targetNetwork;
+                    var hasSource = CommNetBridge.Nodes.TryGetValue(sourceGraph.Owner, out sourceNetwork);
+                    var hasTarget = CommNetBridge.Nodes.TryGetValue(targetGraph.Owner, out targetNetwork);
+
+                    var directBand = hasSource && hasTarget
+                        ? FindMatchingBandSquared(sourceNetwork, targetNetwork, directDistanceSq)
+                        : -1;
+                    result.RouteBands.Add(directBand);
+
+                    var inNodeRange = directDistanceSq > 0d &&
+                                      directDistanceSq < sourceGraph.MaxRange * sourceGraph.MaxRange &&
+                                      directDistanceSq < targetGraph.MaxRange * targetGraph.MaxRange;
+
+                    if (!inNodeRange)
+                        result.Reason = "Fuera de rango";
+                    else if (directBand < 0)
+                        result.Reason = "Sin banda/rango compatible";
+                    else if (IsOccluded(sourceGraph.Position, targetGraph.Position, bodies))
+                        result.Reason = "Bloqueada por cuerpo celeste";
+                    else
+                        result.Reason = "Sin ruta compatible";
+
                     return result;
                 }
 
