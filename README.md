@@ -1,21 +1,29 @@
-﻿# CommNext Redux
+# CommNext Redux
 
-Port comunitario de [CommNext](https://github.com/Kerbalight/CommNext) para **Kerbal Space Program 2 Redux**.
+Port comunitario de CommNext para Kerbal Space Program 2 Redux.
 
-## Estado actual
+Upstream: https://github.com/Kerbalight/CommNext
 
-**v0.0.6 - correcciones de estado y distancia**
+## v0.0.9
 
-- Hook real a KSP.Game.CommNetManager mediante Harmony.
-- Estado CommNet, rango de antena y registro de nodos.
-- Correccion del nodo origen de KSC y rango base de 2 Gm.
-- Catalogo X / S / K / Ka / V.
-- La ventana de diagnostico solo aparece en modo de vuelo real: no aparece en VAB/OAB.
-- La distancia mostrada es ahora la distancia fisica directa entre el nodo CommNet de la nave y el nodo origen de KSC, no la metrica interna de ruta de CommNet.
+- Carga nativa como KerbalMod.
+- Hook a KSP.Game.CommNetManager.
+- Ventana de diagnostico solo en vuelo, nunca en VAB/OAB.
+- Distancia fisica directa al nodo KSC.
+- Correccion del nodo origen KSC y rango base de 2 Gm.
+- Registro de nodos CommNet.
+- Bandas X / S / K / Ka / V.
+- Modulos Relay y Modulator portados.
+- Patches de rangos de antenas originales.
+- Consumo electrico de relÃ©s.
+- Calculador paralelo de rutas CommNext con bandas, relÃ©s y oclusion planetaria.
 
-## Proyecto original
+El calculador CommNext todavia funciona en paralelo al ConnectionGraph vanilla. La siguiente fase es integrar sus resultados en el grafo real de Redux y restaurar renderizado/UI original.
 
-CommNext fue creado por **Kerbalight / leonardfactory**:
-https://github.com/Kerbalight/CommNext
+## Instalacion
 
-Este port conserva la licencia MIT y la atribucion original.
+Descarga la ultima release y copia la carpeta CommNextRedux dentro de <KSP2>/mods/.
+
+## Licencia
+
+Se conserva la licencia MIT y atribucion del proyecto original.
