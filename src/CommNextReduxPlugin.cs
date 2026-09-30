@@ -21,21 +21,23 @@ namespace CommNextRedux
         private double _distanceMeters = -1d;
         private int _nodeCount;
         private CommNextRouteResult _route = new CommNextRouteResult();
-        private bool _isFlightScene;
+        private bool _isOperationalScene;
+        private bool _showWindowScene;
+        private string _lastRouteDebugKey = "";
         private float _nextRefresh;
 
         public override void OnPreInitialized()
         {
             _log = SWLogger;
             CommNetBridge.Log = _log;
-            _log.LogInfo("[CommNextRedux] 0.0.13 pre-initialized");
+            _log.LogInfo("[CommNextRedux] 0.0.14 pre-initialized");
         }
 
         public override void OnInitialized()
         {
             _harmony = new Harmony("DremNox.CommNextRedux");
             _harmony.PatchAll(typeof(CommNextReduxPlugin).Assembly);
-            _log.LogInfo("[CommNextRedux] 0.0.13 initialized; effective CommNext antenna ranges active");
+            _log.LogInfo("[CommNextRedux] 0.0.14 initialized; map-state separation and authoritative source-index routing active");
             RefreshState();
         }
 
@@ -62,14 +64,21 @@ namespace CommNextRedux
                     ? null
                     : game.GlobalGameState.GetGameState();
 
-                _isFlightScene = state != null && state.IsFlightMode && !state.IsObjectAssembly;
+                _isOperationalScene = state != null &&
+                    !state.IsObjectAssembly &&
+                    (state.GameState == GameState.FlightView ||
+                     state.GameState == GameState.Map3DView);
 
-                _vessel = !_isFlightScene || game == null || game.ViewController == null
+                _showWindowScene = state != null &&
+                    state.GameState == GameState.FlightView &&
+                    !state.IsObjectAssembly;
+
+                _vessel = !_isOperationalScene || game == null || game.ViewController == null
                     ? null
                     : game.ViewController.GetActiveSimVessel(false);
 
                 _nodeCount = CommNetBridge.NodeCount;
-                _route = _isFlightScene && _vessel != null
+                _route = _isOperationalScene && _vessel != null
                     ? ManagedCommNextGraph.BuildRoute(_vessel)
                     : new CommNextRouteResult();
 
@@ -88,6 +97,8 @@ namespace CommNextRedux
                     _rangeMeters = 0d;
                     _distanceMeters = -1d;
                 }
+
+                LogRouteStateIfChanged();
             }
             catch (Exception ex)
             {
@@ -98,8 +109,8 @@ namespace CommNextRedux
 
         private void OnGUI()
         {
-            if (!_visible || !_isFlightScene || _vessel == null) return;
-            _window = GUI.Window(728431, _window, DrawWindow, "CommNext Redux 0.0.13");
+            if (!_visible || !_showWindowScene || _vessel == null) return;
+            _window = GUI.Window(728431, _window, DrawWindow, "CommNext Redux 0.0.14");
         }
 
         private void DrawWindow(int id)
@@ -124,6 +135,58 @@ namespace CommNextRedux
             GUILayout.Space(5f);
             GUILayout.Label("Alt+C: mostrar / ocultar");
             GUI.DragWindow(new Rect(0f, 0f, _window.width, 25f));
+        }
+
+        private void LogRouteStateIfChanged()
+        {
+            if (_vessel == null || CommNetBridge.Manager == null)
+                return;
+
+            try
+            {
+                var source = CommNetBridge.Manager.GetSourceNode();
+                var target = _vessel.SimulationObject == null
+                    ? null
+                    : _vessel.SimulationObject.Telemetry == null
+                        ? null
+                        : _vessel.SimulationObject.Telemetry.CommNetNode;
+
+                var sourceRange = source == null ? 0d : source.MaxRange;
+                var targetRange = target == null ? 0d : target.MaxRange;
+                var sourceActive = source != null && source.IsActive;
+                var sourceControl = source != null && source.IsControlSource;
+                var targetActive = target != null && target.IsActive;
+                var bands = CommNetBridge.GetBandSummary(_vessel);
+
+                var key = (_route.Connected ? "C" : "D") + "|" +
+                    _route.Reason + "|" +
+                    sourceRange.ToString("F0") + "|" +
+                    targetRange.ToString("F0") + "|" +
+                    sourceActive + "|" +
+                    sourceControl + "|" +
+                    targetActive + "|" +
+                    bands;
+
+                if (key == _lastRouteDebugKey)
+                    return;
+
+                _lastRouteDebugKey = key;
+                _log.LogInfo(
+                    "[CommNextRedux][Route] connected=" + _route.Connected +
+                    " reason=" + _route.Reason +
+                    " sourceRange=" + sourceRange.ToString("F0") +
+                    " targetRange=" + targetRange.ToString("F0") +
+                    " sourceActive=" + sourceActive +
+                    " sourceControl=" + sourceControl +
+                    " targetActive=" + targetActive +
+                    " bands=" + bands +
+                    " directDistance=" + _distanceMeters.ToString("F0") +
+                    " nodes=" + _nodeCount);
+            }
+            catch (Exception ex)
+            {
+                _log.LogError("[CommNextRedux] Route diagnostics: " + ex);
+            }
         }
 
         private static string FormatDistance(double meters)
