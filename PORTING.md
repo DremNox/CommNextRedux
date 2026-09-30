@@ -1,27 +1,31 @@
-# Porting status
+﻿# Porting status â€” v0.1.0-alpha
 
-## Completed through v0.0.9
-- Redux bootstrap and lifecycle.
-- Flight/OAB state detection.
-- CommNetManager lifecycle bridge.
-- KSC source-node correction.
-- Physical KSC distance.
-- Node registry.
-- X/S/K/Ka/V band model.
-- Relay and Modulator part modules.
-- Stock antenna/relay range patches.
-- Relay EC consumption.
-- Parallel managed route calculator.
+## Full source included
+The original CommNext C# source tree is now compiled as part of CommNextRedux.
+
+## Redux replacements
+- BepInEx logging/config -> compatibility layer.
+- SpaceWarp AssetManager -> direct AssetBundle loader.
+- SpaceWarp ModSaves -> compatibility registry; save-game persistence still needs final Redux-native wiring.
+- UITKForKsp2 windows -> runtime UIDocument factory.
+- CommNetManager private-field lifecycle -> CommNetBridge + managed Redux graph.
+- Original NetworkManager public API -> facade backed by Redux routing.
+- Private map actions -> reflection compatibility helpers.
+- Old runtime syntax -> KSP2-compatible equivalents.
+
+## Already functional from previous alpha work
+- KSC routing and occlusion.
+- Antenna ranges.
 - Band-aware links.
-- Relay-only forwarding.
-- Planetary occlusion checks.
+- Relay recognition.
+- Map link rendering.
+- Authoritative Connected/Disconnected state.
 
-## Next
-1. Map managed route result to Redux ConnectionEdge / ConnectionGraph.
-2. Replace vanilla route selection with CommNext-aware routing.
-3. Restore connection rendering in map view.
-4. Restore configuration and save data.
-5. Restore original UITK windows and controls.
-6. Restore localization and final PAM controls.
+## Needs runtime validation
+- Original UITK window layout against Redux PanelSettings.
+- Original ruler prefabs/shader bundle.
+- Vessel report interactions.
+- Save persistence per campaign.
+- Final relay/modulator PAM injection via Redux-native Lua patches.
 
 Upstream: https://github.com/Kerbalight/CommNext
