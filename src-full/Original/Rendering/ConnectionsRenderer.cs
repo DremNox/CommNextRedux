@@ -33,6 +33,16 @@ public class ConnectionsRenderer : MonoBehaviour
     private readonly Dictionary<string, MapRulerComponent> _rulers = new();
     private readonly Dictionary<string, MapConnectionComponent> _reportConnections = new();
 
+    // Issue #32: independent range preview centered on a selected celestial body.
+    private bool _rangePreviewEnabled;
+    private IGGuid _rangePreviewTargetGuid;
+    private double _rangePreviewMeters;
+    private Color _rangePreviewColor;
+    private GameObject? _rangePreviewObject;
+    private MapSphereRulerComponent? _rangePreviewSphere;
+
+    public bool IsRangePreviewEnabled => _rangePreviewEnabled;
+
     private static Dictionary<IGGuid, Map3DFocusItem>? AllMapItems => _mapCore.map3D.AllMapSelectableItems;
     private static MapCore _mapCore = null!;
 
@@ -126,8 +136,36 @@ public class ConnectionsRenderer : MonoBehaviour
         ClearConnections();
         ClearReportConnections();
         ClearRulers();
+        DestroyRangePreviewObject();
 
         ConnectionsDisplayMode = ConnectionsDisplayMode.Lines;
+    }
+
+    public void SetRangePreview(IGGuid targetGuid, double rangeMeters, Color color)
+    {
+        _rangePreviewTargetGuid = targetGuid;
+        _rangePreviewMeters = rangeMeters;
+        _rangePreviewColor = color;
+        _rangePreviewEnabled = rangeMeters > 0d;
+        MarkAsDirty();
+
+        Logger.LogInfo($"Range preview enabled target={targetGuid} range={rangeMeters:F0}m");
+    }
+
+    public void ClearRangePreview()
+    {
+        _rangePreviewEnabled = false;
+        DestroyRangePreviewObject();
+        Logger.LogInfo("Range preview disabled");
+    }
+
+    private void DestroyRangePreviewObject()
+    {
+        if (_rangePreviewObject != null)
+            Destroy(_rangePreviewObject);
+
+        _rangePreviewObject = null;
+        _rangePreviewSphere = null;
     }
 
     private void ClearConnections()
@@ -167,11 +205,22 @@ public class ConnectionsRenderer : MonoBehaviour
 
     private void UpdateRenderings()
     {
+        if (!MessageListener.IsInMapView)
+        {
+            DestroyRangePreviewObject();
+            return;
+        }
+
+        // The range preview does not depend on the CommNet graph, so render it
+        // independently. This also allows previewing a body/antenna in map view
+        // even when no vessel currently has a valid network node.
+        if (_rangePreviewEnabled)
+            UpdateRangePreview();
+
         var shouldRun = IsConnectionsEnabled || IsRulersEnabled || ReportVessel != null;
         if (!shouldRun) return;
 
-        if (!MessageListener.IsInMapView ||
-            !NetworkManager.Instance.TryGetConnectionGraphNodesAndIndexes(
+        if (!NetworkManager.Instance.TryGetConnectionGraphNodesAndIndexes(
                 out var nodes,
                 out var prevIndexes,
                 out var networkJobConnections) ||
@@ -187,6 +236,36 @@ public class ConnectionsRenderer : MonoBehaviour
         {
             Logger.LogError("Error updating connections: " + e);
         }
+    }
+
+    private void UpdateRangePreview()
+    {
+        if (!GameManager.Instance.Game.Map.TryGetMapCore(out _mapCore))
+            return;
+
+        var target = GetMapItem(_rangePreviewTargetGuid);
+        if (target == null)
+            return;
+
+        if (_rangePreviewObject == null || _rangePreviewSphere == null)
+        {
+            _rangePreviewObject = new GameObject($"CommNextRangePreview_{_rangePreviewTargetGuid}");
+            _rangePreviewObject.transform.SetParent(_mapCore.map3D.transform);
+            _rangePreviewObject.layer = LayerMask.NameToLayer("Map");
+
+            var sphereObject = Instantiate(RulerSpherePrefab, _rangePreviewObject.transform);
+            sphereObject.name = "RangePreviewSphere";
+            sphereObject.transform.localPosition = Vector3.zero;
+            _rangePreviewSphere = sphereObject.AddComponent<MapSphereRulerComponent>();
+            _rangePreviewSphere.Configure(_rangePreviewMeters, _rangePreviewColor);
+        }
+        else
+        {
+            _rangePreviewSphere.Range = _rangePreviewMeters;
+            _rangePreviewSphere.SetColor(_rangePreviewColor);
+        }
+
+        _rangePreviewObject.transform.position = target.transform.position;
     }
 
     private void UpdateConnections(List<ConnectionGraphNode> nodes, int[] prevIndexes,
