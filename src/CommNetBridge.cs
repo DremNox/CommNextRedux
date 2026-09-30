@@ -158,8 +158,19 @@ namespace CommNextRedux
                     rangeMeters = telemetry.CommNetRangeMeters;
                 }
 
-                if (Manager != null)
-                    distanceMeters = Manager.GetConnectionDistance(vessel.GlobalId);
+                if (Manager != null && telemetry != null && telemetry.CommNetNode != null)
+                {
+                    var source = Manager.GetSourceNode();
+                    if (source != null)
+                    {
+                        var a = telemetry.CommNetNode.Position;
+                        var b = source.Position;
+                        var dx = a.x - b.x;
+                        var dy = a.y - b.y;
+                        var dz = a.z - b.z;
+                        distanceMeters = Math.Sqrt(dx * dx + dy * dy + dz * dz);
+                    }
+                }
 
                 return telemetry != null;
             }
