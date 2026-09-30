@@ -1,4 +1,5 @@
-﻿using BepInEx.Logging;
+﻿using System.Collections;
+using BepInEx.Logging;
 using CommNext.Managers;
 using CommNext.Network;
 using CommNext.Rendering;
@@ -58,6 +59,7 @@ public class VesselReportWindowController : MonoBehaviour
     public List<NetworkConnection> ReportVesselConnections = [];
 
     private bool _isWindowOpen;
+    private bool _isUiInitialized;
 
     private VesselComponent? _vessel;
 
@@ -82,6 +84,12 @@ public class VesselReportWindowController : MonoBehaviour
         set
         {
             _isWindowOpen = value;
+            if (!_isUiInitialized || _root == null)
+            {
+                if (!value) Vessel = null;
+                return;
+            }
+
             _root.style.display = _isWindowOpen ? DisplayStyle.Flex : DisplayStyle.None;
             if (value)
             {
@@ -93,7 +101,7 @@ public class VesselReportWindowController : MonoBehaviour
                 Vessel = null;
             }
 
-            MainUIManager.Instance.MapToolbarWindow!.UpdateButtonState();
+            MainUIManager.Instance.MapToolbarWindow?.UpdateButtonState();
         }
     }
 
@@ -109,8 +117,10 @@ public class VesselReportWindowController : MonoBehaviour
     /// </summary>
     private void AlignWindowToToolbar()
     {
+        if (!_isUiInitialized || _root == null) return;
         var toolbarWindow = MainUIManager.Instance.MapToolbarWindow;
-        var appWindowPosition = toolbarWindow!.Root.transform.position;
+        if (toolbarWindow == null || toolbarWindow.Root == null) return;
+        var appWindowPosition = toolbarWindow.Root.transform.position;
         _root.transform.position = new Vector3(
             appWindowPosition.x - 400 + toolbarWindow.Width,
             appWindowPosition.y + 10 + toolbarWindow.Height,
@@ -123,8 +133,25 @@ public class VesselReportWindowController : MonoBehaviour
     /// </summary>
     private void OnEnable()
     {
-        // Get the UIDocument component from the game object
         _window = GetComponent<UIDocument>();
+        StartCoroutine(InitializeWhenVisualTreeReady());
+    }
+
+    private IEnumerator InitializeWhenVisualTreeReady()
+    {
+        const int maxFrames = 120;
+        var frame = 0;
+
+        while ((_window == null || _window.rootVisualElement == null ||
+                _window.rootVisualElement.childCount == 0) && frame++ < maxFrames)
+            yield return null;
+
+        if (_window == null || _window.rootVisualElement == null ||
+            _window.rootVisualElement.childCount == 0)
+        {
+            Logger.LogError("Vessel report UXML was not instantiated after waiting for UI Toolkit.");
+            yield break;
+        }
 
         _root = _window.rootVisualElement[0];
         _root.StopMouseEventsPropagation();
@@ -153,7 +180,11 @@ public class VesselReportWindowController : MonoBehaviour
         var closeButton = _root.Q<Button>("close-button");
         closeButton.clicked += () => IsWindowOpen = false;
 
-        IsWindowOpen = false;
+        _isUiInitialized = true;
+        _root.style.display = _isWindowOpen ? DisplayStyle.Flex : DisplayStyle.None;
+        if (_isWindowOpen) BuildUI();
+
+        Logger.LogInfo("Vessel report UI initialized.");
     }
 
     private void FocusVessel()
