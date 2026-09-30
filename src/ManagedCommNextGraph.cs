@@ -187,7 +187,9 @@ namespace CommNextRedux
 
                     processed[current] = true;
 
-                    if (!currentGraphNode.IsActive)
+                    // Redux marks the KSC source node inactive in some
+                    // sessions even though it remains the authoritative control source.
+                    if (current != sourceIndex && !currentGraphNode.IsActive)
                         continue;
 
                     if (!currentNode.HasEnoughResources)
