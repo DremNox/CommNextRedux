@@ -4,7 +4,7 @@
   "name": "CommNext Redux",
   "author": "DremNox / Kerbalight",
   "description": "Port de CommNext para KSP2 Redux. Version inicial de compatibilidad.",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "ksp2_version": { "min": "*", "max": "*" },
   "dependencies": [
     {
@@ -12,5 +12,5 @@
       "version": { "min": "2.0.0", "max": "*" }
     }
   ],
-  "main_assembly": "CommNextRedux.0.0.2.dll"
+  "main_assembly": "CommNextRedux.0.0.3.dll"
 }
