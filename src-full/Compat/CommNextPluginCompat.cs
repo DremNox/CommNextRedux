@@ -7,7 +7,7 @@ namespace CommNext
     {
         public const string ModGuid = "CommNextRedux";
         public const string ModName = "CommNext Redux";
-        public const string ModVer = "0.1.0-full-port";
+        public const string ModVer = "0.1.0-preview.2";
 
         public static CommNextPlugin Instance { get; } = new CommNextPlugin();
 
