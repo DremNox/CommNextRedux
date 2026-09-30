@@ -32,6 +32,15 @@ public static class PluginSettings
         G50
     }
 
+    public enum SignalLossControlMode
+    {
+        [Description("KSP2 / Partial")]
+        KSP2Partial,
+
+        [Description("Strict")]
+        Strict
+    }
+
     private static CommNextPlugin Plugin => CommNextPlugin.Instance;
 
     // Network
@@ -39,6 +48,7 @@ public static class PluginSettings
     public static ConfigEntry<bool> RelaysRequirePower { get; private set; } = null!;
     public static ConfigEntry<KSCRangeMode> KSCRange { get; private set; } = null!;
     public static ConfigEntry<float> OcclusionRadiusFactor { get; private set; } = null!;
+    public static ConfigEntry<SignalLossControlMode> SignalLossControl { get; private set; } = null!;
 
     // Debug
     public static ConfigEntry<bool> EnableProfileLogs { get; private set; } = null!;
@@ -82,6 +92,15 @@ public static class PluginSettings
                 "Default value is 0.98. Meaning 98% of planet radius is considered for occlusion.\n" +
                 new AcceptableValueRange<float>(0, 1)
             )
+        );
+
+        SignalLossControl = Plugin.Config.Bind(
+            "Control",
+            "Signal loss control mode",
+            SignalLossControlMode.KSP2Partial,
+            "KSP2 / Partial keeps the stock NoCommNet behavior (for example Z/X and some SAS modes remain available).\n" +
+            "Strict blocks new flight commands for uncrewed probes while CommNext has no valid route.\n" +
+            "Crewed vessels keep local control."
         );
 
         // Debug
