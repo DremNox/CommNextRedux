@@ -17,11 +17,28 @@ namespace CommNextRedux
             typeof(CommNetManager).GetField("_allNodes",
                 BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
 
+        private static readonly MethodInfo RefreshCommNetNodeMethod =
+            typeof(TelemetryComponent).GetMethod("RefreshCommNetNode",
+                BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+
         internal static CommNetManager Manager { get; private set; }
         internal static ILogger Log { get; set; }
         internal static readonly Dictionary<IGGuid, NetworkNode> Nodes = new Dictionary<IGGuid, NetworkNode>();
 
         internal static bool IsAttached => Manager != null;
+
+        internal static void RefreshTelemetry(TelemetryComponent telemetry)
+        {
+            try
+            {
+                if (telemetry != null && RefreshCommNetNodeMethod != null)
+                    RefreshCommNetNodeMethod.Invoke(telemetry, null);
+            }
+            catch (Exception ex)
+            {
+                Log?.LogError("[CommNextRedux] RefreshCommNetNode invoke: " + ex);
+            }
+        }
 
         internal static double SourceRangeMeters
         {
@@ -120,10 +137,17 @@ namespace CommNextRedux
 
             NetworkNode node;
             if (!Nodes.TryGetValue(vessel.GlobalId, out node))
-                return "X: pendiente";
+                return "pendiente";
 
-            var range = node.GetBandRange(NetworkBands.DefaultBand);
-            return "X: " + FormatDistance(range);
+            var parts = new List<string>();
+            foreach (var band in NetworkBands.Instance.AllBands)
+            {
+                var range = node.GetBandRange(band.Code);
+                if (range > 0d)
+                    parts.Add(band.Code + ": " + FormatDistance(range));
+            }
+
+            return parts.Count == 0 ? "ninguna activa" : string.Join(" | ", parts.ToArray());
         }
 
         private static string FormatDistance(double meters)
