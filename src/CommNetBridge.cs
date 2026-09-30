@@ -89,6 +89,7 @@ namespace CommNextRedux
         {
             Manager = manager;
             Nodes.Clear();
+            ManagedCommNextGraph.Invalidate();
 
             try
             {
@@ -116,6 +117,7 @@ namespace CommNextRedux
             {
                 Manager = null;
                 Nodes.Clear();
+                ManagedCommNextGraph.Invalidate();
                 Log?.LogInfo("[CommNextRedux] Detached from CommNetManager");
             }
         }
@@ -134,6 +136,7 @@ namespace CommNextRedux
                 }
 
                 node.SetVanillaRange(graphNode.MaxRange);
+                ManagedCommNextGraph.Invalidate();
 
                 if (!string.IsNullOrWhiteSpace(forcedName))
                 {
@@ -156,6 +159,7 @@ namespace CommNextRedux
         {
             if (graphNode == null) return;
             Nodes.Remove(graphNode.Owner);
+            ManagedCommNextGraph.Invalidate();
         }
 
         internal static string GetBandSummary(VesselComponent vessel)
