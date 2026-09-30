@@ -193,7 +193,10 @@ namespace CommNextRedux
                     if (!currentNode.HasEnoughResources)
                         continue;
 
-                    if (!currentGraphNode.IsControlSource && !currentNode.IsRelay)
+                    // Redux does not always keep IsControlSource set on the
+                    // CommNet source node. The node returned by GetSourceNode() is the
+                    // authoritative KSC source regardless of that transient flag.
+                    if (current != sourceIndex && !currentNode.IsRelay)
                         continue;
 
                     // The original CommNext processes disconnected relays first, but does
