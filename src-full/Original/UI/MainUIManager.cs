@@ -1,7 +1,5 @@
-using System;
 using BepInEx.Logging;
 using CommNext.UI.Tooltip;
-using SpaceWarp.API.Assets;
 using UitkForKsp2.API;
 using UnityEngine.UIElements;
 
@@ -24,57 +22,26 @@ public class MainUIManager
 
     public void Initialize()
     {
-        Logger.LogInfo("Initializing UI");
+        Logger.LogInfo("Initializing Redux-native UI");
 
-        // Redux/UITK compatibility:
-        // Window.Create() creates the UIDocument correctly, but on current Redux it
-        // does not populate rootVisualElement from the supplied VisualTreeAsset.
-        // Clone the tree explicitly before adding the controller so OnEnable sees
-        // the complete hierarchy immediately.
-        _mapToolbarDocument = CreateWindow(
+        _mapToolbarDocument = Window.Create(
             MapToolbarWindowController.WindowOptions,
-            $"{CommNextPlugin.ModGuid}/commnext_ui/ui/commnextmaptoolbar.uxml",
-            "map toolbar");
+            CommNextRedux.ReduxUiFactory.BuildMapToolbar());
         MapToolbarWindow = _mapToolbarDocument.gameObject.AddComponent<MapToolbarWindowController>();
 
-        _vesselReportDocument = CreateWindow(
+        _vesselReportDocument = Window.Create(
             VesselReportWindowController.WindowOptions,
-            $"{CommNextPlugin.ModGuid}/commnext_ui/ui/vesselreportwindow.uxml",
-            "vessel report");
+            CommNextRedux.ReduxUiFactory.BuildVesselReport());
         VesselReportWindow = _vesselReportDocument.gameObject.AddComponent<VesselReportWindowController>();
 
-        // Tooltip should be created last so it renders over the other windows.
-        _tooltipDocument = CreateWindow(
+        // Tooltip is created last so it remains above the other windows.
+        _tooltipDocument = Window.Create(
             TooltipWindowController.WindowOptions,
-            $"{CommNextPlugin.ModGuid}/commnext_ui/ui/tooltipwindow.uxml",
-            "tooltip");
+            CommNextRedux.ReduxUiFactory.BuildTooltip());
         TooltipWindow = _tooltipDocument.gameObject.AddComponent<TooltipWindowController>();
-    }
 
-    private static UIDocument CreateWindow(WindowOptions options, string assetPath, string label)
-    {
-        var tree = AssetManager.GetAsset<VisualTreeAsset>(assetPath);
-        if (tree == null)
-            throw new InvalidOperationException($"CommNext {label} VisualTreeAsset not found: {assetPath}");
-
-        var document = Window.Create(options, tree);
-        if (document == null)
-            throw new InvalidOperationException($"CommNext {label} Window.Create returned null.");
-
-        var root = document.rootVisualElement;
-        if (root == null)
-            throw new InvalidOperationException($"CommNext {label} UIDocument has no rootVisualElement.");
-
-        if (root.childCount == 0)
-        {
-            tree.CloneTree(root);
-            Logger.LogInfo($"Redux manual UXML clone: {label}, children={root.childCount}");
-        }
-        else
-        {
-            Logger.LogInfo($"UITK populated UXML normally: {label}, children={root.childCount}");
-        }
-
-        return document;
+        Logger.LogInfo(
+            $"Redux-native UI documents created: toolbar={_mapToolbarDocument.rootVisualElement.childCount}, " +
+            $"report={_vesselReportDocument.rootVisualElement.childCount}, tooltip={_tooltipDocument.rootVisualElement.childCount}");
     }
 }
