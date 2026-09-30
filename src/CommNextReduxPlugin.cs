@@ -28,14 +28,14 @@ namespace CommNextRedux
         {
             _log = SWLogger;
             CommNetBridge.Log = _log;
-            _log.LogInfo("[CommNextRedux] 0.0.9 pre-initialized");
+            _log.LogInfo("[CommNextRedux] 0.0.10 pre-initialized");
         }
 
         public override void OnInitialized()
         {
             _harmony = new Harmony("DremNox.CommNextRedux");
             _harmony.PatchAll(typeof(CommNextReduxPlugin).Assembly);
-            _log.LogInfo("[CommNextRedux] 0.0.9 initialized; managed route and occlusion analysis active");
+            _log.LogInfo("[CommNextRedux] 0.0.10 initialized; authoritative CommNext status active");
             RefreshState();
         }
 
@@ -97,7 +97,7 @@ namespace CommNextRedux
         private void OnGUI()
         {
             if (!_visible || !_isFlightScene || _vessel == null) return;
-            _window = GUI.Window(728431, _window, DrawWindow, "CommNext Redux 0.0.9");
+            _window = GUI.Window(728431, _window, DrawWindow, "CommNext Redux 0.0.10");
         }
 
         private void DrawWindow(int id)
