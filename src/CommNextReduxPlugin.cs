@@ -20,20 +20,21 @@ namespace CommNextRedux
         private double _rangeMeters;
         private double _distanceMeters = -1d;
         private int _nodeCount;
+        private bool _isFlightScene;
         private float _nextRefresh;
 
         public override void OnPreInitialized()
         {
             _log = SWLogger;
             CommNetBridge.Log = _log;
-            _log.LogInfo("[CommNextRedux] 0.0.5 pre-initialized");
+            _log.LogInfo("[CommNextRedux] 0.0.6 pre-initialized");
         }
 
         public override void OnInitialized()
         {
             _harmony = new Harmony("DremNox.CommNextRedux");
             _harmony.PatchAll(typeof(CommNextReduxPlugin).Assembly);
-            _log.LogInfo("[CommNextRedux] 0.0.5 initialized; CommNet, KSC and band registry active");
+            _log.LogInfo("[CommNextRedux] 0.0.6 initialized; flight-state and physical-distance fixes active");
             RefreshState();
         }
 
@@ -54,7 +55,13 @@ namespace CommNextRedux
             try
             {
                 var game = GameManager.Instance == null ? null : GameManager.Instance.Game;
-                _vessel = game == null || game.ViewController == null
+                var state = game == null || game.GlobalGameState == null
+                    ? null
+                    : game.GlobalGameState.GetGameState();
+
+                _isFlightScene = state != null && state.IsFlightMode && !state.IsObjectAssembly;
+
+                _vessel = !_isFlightScene || game == null || game.ViewController == null
                     ? null
                     : game.ViewController.GetActiveSimVessel(false);
 
@@ -85,8 +92,8 @@ namespace CommNextRedux
 
         private void OnGUI()
         {
-            if (!_visible || _vessel == null) return;
-            _window = GUI.Window(728431, _window, DrawWindow, "CommNext Redux 0.0.5");
+            if (!_visible || !_isFlightScene || _vessel == null) return;
+            _window = GUI.Window(728431, _window, DrawWindow, "CommNext Redux 0.0.6");
         }
 
         private void DrawWindow(int id)
@@ -95,8 +102,8 @@ namespace CommNextRedux
             GUILayout.Label("Nave: " + _vessel.DisplayName);
             GUILayout.Label("Conexion: " + _connectionStatus);
             GUILayout.Label("Rango antena: " + FormatDistance(_rangeMeters));
-            GUILayout.Label("Distancia de red: " +
-                (_distanceMeters < 0d ? "sin ruta" : FormatDistance(_distanceMeters)));
+            GUILayout.Label("Distancia directa a KSC: " +
+                (_distanceMeters < 0d ? "sin datos" : FormatDistance(_distanceMeters)));
             GUILayout.Label("Nodos CommNet: " + _nodeCount);
             GUILayout.Label("Rango origen/KSC: " + FormatDistance(CommNetBridge.SourceRangeMeters));
             GUILayout.Label("Bandas nave: " + CommNetBridge.GetBandSummary(_vessel));
