@@ -20,6 +20,7 @@ namespace CommNextRedux
         private double _rangeMeters;
         private double _distanceMeters = -1d;
         private int _nodeCount;
+        private CommNextRouteResult _route = new CommNextRouteResult();
         private bool _isFlightScene;
         private float _nextRefresh;
 
@@ -27,14 +28,14 @@ namespace CommNextRedux
         {
             _log = SWLogger;
             CommNetBridge.Log = _log;
-            _log.LogInfo("[CommNextRedux] 0.0.8 pre-initialized");
+            _log.LogInfo("[CommNextRedux] 0.0.9 pre-initialized");
         }
 
         public override void OnInitialized()
         {
             _harmony = new Harmony("DremNox.CommNextRedux");
             _harmony.PatchAll(typeof(CommNextReduxPlugin).Assembly);
-            _log.LogInfo("[CommNextRedux] 0.0.8 initialized; relay power consumption active");
+            _log.LogInfo("[CommNextRedux] 0.0.9 initialized; managed route and occlusion analysis active");
             RefreshState();
         }
 
@@ -66,6 +67,9 @@ namespace CommNextRedux
                     : game.ViewController.GetActiveSimVessel(false);
 
                 _nodeCount = CommNetBridge.NodeCount;
+                _route = _isFlightScene && _vessel != null
+                    ? ManagedCommNextGraph.BuildRoute(_vessel)
+                    : new CommNextRouteResult();
 
                 string status;
                 double range;
@@ -93,7 +97,7 @@ namespace CommNextRedux
         private void OnGUI()
         {
             if (!_visible || !_isFlightScene || _vessel == null) return;
-            _window = GUI.Window(728431, _window, DrawWindow, "CommNext Redux 0.0.8");
+            _window = GUI.Window(728431, _window, DrawWindow, "CommNext Redux 0.0.9");
         }
 
         private void DrawWindow(int id)
@@ -107,6 +111,13 @@ namespace CommNextRedux
             GUILayout.Label("Nodos CommNet: " + _nodeCount);
             GUILayout.Label("Rango origen/KSC: " + FormatDistance(CommNetBridge.SourceRangeMeters));
             GUILayout.Label("Bandas nave: " + CommNetBridge.GetBandSummary(_vessel));
+            GUILayout.Label("Ruta CommNext: " + (_route.Connected ? "conectada" : _route.Reason));
+            if (_route.Connected)
+            {
+                GUILayout.Label("Saltos: " + _route.Hops +
+                    "   Recorrido: " + FormatDistance(_route.TotalDistanceMeters));
+                GUILayout.Label(_route.Path);
+            }
             GUILayout.Label("Manager: " + (CommNetBridge.IsAttached ? "conectado" : "pendiente"));
             GUILayout.Space(5f);
             GUILayout.Label("Alt+C: mostrar / ocultar");
