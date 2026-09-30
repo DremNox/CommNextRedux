@@ -5,14 +5,17 @@ using KSP.Game;
 using KSP.Sim;
 using KSP.Sim.impl;
 using Unity.Mathematics;
+using UnityEngine;
 
 namespace CommNextRedux
 {
     internal sealed class CommNextRouteResult
     {
+        internal bool Evaluated;
         internal bool Connected;
         internal int Hops;
         internal double TotalDistanceMeters;
+        internal double GraphCost;
         internal string Path = "sin ruta";
         internal string Reason = "";
     }
@@ -21,8 +24,47 @@ namespace CommNextRedux
     {
         private const double OcclusionRadiusFactor = 0.98;
         private const double SeaLevelTerrainTolerance = 1000.0;
+        private const float CacheSeconds = 0.25f;
+
+        private sealed class CacheEntry
+        {
+            internal float ExpiresAt;
+            internal int NodeCount;
+            internal CommNextRouteResult Result;
+        }
+
+        private static readonly Dictionary<IGGuid, CacheEntry> Cache =
+            new Dictionary<IGGuid, CacheEntry>();
+
+        internal static void Invalidate()
+        {
+            Cache.Clear();
+        }
 
         internal static CommNextRouteResult BuildRoute(VesselComponent vessel)
+        {
+            if (vessel == null)
+                return new CommNextRouteResult { Reason = "Sin nave" };
+
+            CacheEntry entry;
+            var nodeCount = CommNetBridge.NodeCount;
+            if (Cache.TryGetValue(vessel.GlobalId, out entry) &&
+                entry != null &&
+                entry.ExpiresAt >= Time.unscaledTime &&
+                entry.NodeCount == nodeCount)
+                return entry.Result;
+
+            var result = ComputeRoute(vessel);
+            Cache[vessel.GlobalId] = new CacheEntry
+            {
+                ExpiresAt = Time.unscaledTime + CacheSeconds,
+                NodeCount = nodeCount,
+                Result = result
+            };
+            return result;
+        }
+
+        private static CommNextRouteResult ComputeRoute(VesselComponent vessel)
         {
             var result = new CommNextRouteResult();
 
@@ -56,61 +98,109 @@ namespace CommNextRedux
                     return result;
                 }
 
+                result.Evaluated = true;
+
+                if (targetIndex == sourceIndex)
+                {
+                    result.Connected = true;
+                    result.Path = "KSC";
+                    result.Reason = "Nodo origen";
+                    result.GraphCost = 0d;
+                    return result;
+                }
+
                 var bodies = BuildBodies(sourceNode);
                 var count = graphNodes.Count;
-                var distances = new double[count];
+                var sourceCosts = new double[count];
+                var optimums = new double[count];
                 var previous = new int[count];
                 var previousBand = new int[count];
-                var visited = new bool[count];
+                var previousEdgeDistance = new double[count];
+                var processed = new bool[count];
+                var queue = new List<int>(count);
+                var remainingRelays = 0;
 
                 for (var i = 0; i < count; i++)
                 {
-                    distances[i] = double.MaxValue;
+                    sourceCosts[i] = double.MaxValue;
+                    optimums[i] = double.MaxValue;
                     previous[i] = -1;
                     previousBand[i] = -1;
+                    previousEdgeDistance[i] = 0d;
                     CommNetBridge.RegisterOrUpdateNode(graphNodes[i]);
+                    queue.Add(i);
+
+                    NetworkNode registered;
+                    if (CommNetBridge.Nodes.TryGetValue(graphNodes[i].Owner, out registered) &&
+                        registered.IsRelay)
+                        remainingRelays++;
                 }
 
-                distances[sourceIndex] = 0d;
+                sourceCosts[sourceIndex] = 0d;
+                optimums[sourceIndex] = 0d;
 
-                for (var step = 0; step < count; step++)
+                while (queue.Count > 0)
                 {
+                    var queueIndex = -1;
                     var current = -1;
-                    var best = double.MaxValue;
+                    var lower = double.MaxValue;
 
-                    for (var i = 0; i < count; i++)
+                    for (var qi = 0; qi < queue.Count; qi++)
                     {
-                        if (!visited[i] && distances[i] < best)
+                        var candidateIndex = queue[qi];
+
+                        NetworkNode candidateNode;
+                        var candidateIsRelay =
+                            CommNetBridge.Nodes.TryGetValue(graphNodes[candidateIndex].Owner, out candidateNode) &&
+                            candidateNode.IsRelay;
+
+                        if (remainingRelays > 0 && !candidateIsRelay)
+                            continue;
+
+                        if (queueIndex < 0 || sourceCosts[candidateIndex] < lower)
                         {
-                            best = distances[i];
-                            current = i;
+                            queueIndex = qi;
+                            current = candidateIndex;
+                            lower = sourceCosts[candidateIndex];
                         }
                     }
 
                     if (current < 0)
-                        break;
+                    {
+                        // Defensive fallback if relay metadata changes while evaluating.
+                        queueIndex = 0;
+                        current = queue[0];
+                    }
 
-                    if (current == targetIndex)
-                        break;
-
-                    visited[current] = true;
+                    queue.RemoveAt(queueIndex);
 
                     var currentGraphNode = graphNodes[current];
                     NetworkNode currentNode;
                     if (!CommNetBridge.Nodes.TryGetValue(currentGraphNode.Owner, out currentNode))
                         continue;
 
-                    var currentIsSource = currentGraphNode.IsControlSource;
+                    if (currentNode.IsRelay && remainingRelays > 0)
+                        remainingRelays--;
 
-                    if (!currentIsSource && !currentNode.IsRelay)
+                    processed[current] = true;
+
+                    if (!currentGraphNode.IsActive)
                         continue;
 
                     if (!currentNode.HasEnoughResources)
                         continue;
 
+                    if (!currentGraphNode.IsControlSource && !currentNode.IsRelay)
+                        continue;
+
+                    // The original CommNext processes disconnected relays first, but does
+                    // not use them to establish a route until they are reachable.
+                    if (sourceCosts[current] == double.MaxValue)
+                        continue;
+
                     for (var target = 0; target < count; target++)
                     {
-                        if (target == current || visited[target])
+                        if (target == current || processed[target])
                             continue;
 
                         var targetGraphNode = graphNodes[target];
@@ -124,36 +214,36 @@ namespace CommNextRedux
                         if (!targetNode.HasEnoughResources)
                             continue;
 
-                        var distance = Distance(currentGraphNode.Position, targetGraphNode.Position);
-                        if (distance <= 0d)
+                        var distanceSq = DistanceSquared(
+                            currentGraphNode.Position,
+                            targetGraphNode.Position);
+
+                        if (distanceSq <= 0d)
                             continue;
 
-                        if (distance > currentGraphNode.MaxRange || distance > targetGraphNode.MaxRange)
+                        if (distanceSq >= currentGraphNode.MaxRange * currentGraphNode.MaxRange ||
+                            distanceSq >= targetGraphNode.MaxRange * targetGraphNode.MaxRange)
                             continue;
 
-                        var band = FindMatchingBand(currentNode, targetNode, distance);
+                        var band = FindMatchingBandSquared(currentNode, targetNode, distanceSq);
                         if (band < 0)
                             continue;
 
                         if (IsOccluded(currentGraphNode.Position, targetGraphNode.Position, bodies))
                             continue;
 
-                        var candidate = distances[current] + distance;
-                        if (candidate >= distances[target])
+                        // Original CommNext default: NearestRelay. It minimizes the
+                        // current hop while still tracking accumulated squared cost.
+                        var optimum = distanceSq;
+                        if (optimum >= optimums[target])
                             continue;
 
-                        distances[target] = candidate;
+                        optimums[target] = optimum;
+                        sourceCosts[target] = sourceCosts[current] + distanceSq;
                         previous[target] = current;
                         previousBand[target] = band;
+                        previousEdgeDistance[target] = Math.Sqrt(distanceSq);
                     }
-                }
-
-                if (targetIndex == sourceIndex)
-                {
-                    result.Connected = true;
-                    result.Path = "KSC";
-                    result.Reason = "Nodo origen";
-                    return result;
                 }
 
                 if (previous[targetIndex] < 0)
@@ -164,13 +254,16 @@ namespace CommNextRedux
 
                 var indexes = new List<int>();
                 var bands = new List<int>();
+                var edgeDistances = new List<double>();
                 var cursor = targetIndex;
 
                 while (cursor >= 0 && cursor != sourceIndex)
                 {
                     indexes.Add(cursor);
                     bands.Add(previousBand[cursor]);
+                    edgeDistances.Add(previousEdgeDistance[cursor]);
                     cursor = previous[cursor];
+
                     if (indexes.Count > count)
                     {
                         result.Reason = "Ruta ciclica";
@@ -187,12 +280,16 @@ namespace CommNextRedux
                 indexes.Add(sourceIndex);
                 indexes.Reverse();
                 bands.Reverse();
+                edgeDistances.Reverse();
 
                 var pathParts = new List<string>();
+                var physicalDistance = 0d;
+
                 for (var i = 0; i < indexes.Count; i++)
                 {
                     var graphNode = graphNodes[indexes[i]];
                     string name;
+
                     if (i == 0)
                     {
                         name = "KSC";
@@ -215,11 +312,15 @@ namespace CommNextRedux
                             : "?";
                         pathParts.Add("--" + bandName + "-->");
                     }
+
+                    if (i < edgeDistances.Count)
+                        physicalDistance += edgeDistances[i];
                 }
 
                 result.Connected = true;
                 result.Hops = indexes.Count - 1;
-                result.TotalDistanceMeters = distances[targetIndex];
+                result.TotalDistanceMeters = physicalDistance;
+                result.GraphCost = sourceCosts[targetIndex];
                 result.Path = string.Join(" ", pathParts.ToArray());
                 result.Reason = "Ruta valida";
                 return result;
@@ -228,6 +329,7 @@ namespace CommNextRedux
             {
                 CommNetBridge.Log?.LogError("[CommNextRedux] Managed route: " + ex);
                 result.Reason = "Error calculando ruta";
+                result.Evaluated = false;
                 return result;
             }
         }
@@ -240,26 +342,31 @@ namespace CommNextRedux
             return -1;
         }
 
-        private static int FindMatchingBand(NetworkNode a, NetworkNode b, double distance)
+        private static int FindMatchingBandSquared(NetworkNode a, NetworkNode b, double distanceSq)
         {
             for (var i = 0; i < NetworkBands.Instance.AllBands.Count; i++)
             {
                 if (a.BandRanges.Length <= i || b.BandRanges.Length <= i)
                     continue;
 
-                if (a.BandRanges[i] >= distance && b.BandRanges[i] >= distance)
+                var ar = a.BandRanges[i];
+                var br = b.BandRanges[i];
+
+                if (ar > 0d && br > 0d &&
+                    distanceSq < ar * ar &&
+                    distanceSq < br * br)
                     return i;
             }
 
             return -1;
         }
 
-        private static double Distance(double3 a, double3 b)
+        private static double DistanceSquared(double3 a, double3 b)
         {
             var dx = a.x - b.x;
             var dy = a.y - b.y;
             var dz = a.z - b.z;
-            return Math.Sqrt(dx * dx + dy * dy + dz * dz);
+            return dx * dx + dy * dy + dz * dz;
         }
 
         private sealed class BodyInfo
@@ -284,7 +391,8 @@ namespace CommNextRedux
                 result.Add(new BodyInfo
                 {
                     Position = new double3(local.x, local.y, local.z),
-                    Radius = Math.Max(0d,
+                    Radius = Math.Max(
+                        0d,
                         body.radius * OcclusionRadiusFactor - SeaLevelTerrainTolerance)
                 });
             }
@@ -315,7 +423,8 @@ namespace CommNextRedux
                 var t1 = (-qb - sqrt) / (2d * qa);
                 var t2 = (-qb + sqrt) / (2d * qa);
 
-                if ((t1 >= 0d && t1 <= 1d) || (t2 >= 0d && t2 <= 1d))
+                if ((t1 >= 0d && t1 <= 1d) ||
+                    (t2 >= 0d && t2 <= 1d))
                     return true;
             }
 
