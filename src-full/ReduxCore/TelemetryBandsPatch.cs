@@ -41,7 +41,7 @@ namespace CommNextRedux
 
                 foreach (var part in partOwner.Parts)
                 {
-                    if (IsStockRelayPart(part.PartName))
+                    if (AntennaCatalog.IsRelay(part.PartName))
                         isRelay = true;
 
                     Data_NextRelay relayData;
@@ -57,7 +57,7 @@ namespace CommNextRedux
                     if (!part.TryGetModule<PartComponentModule_DataTransmitter>(out transmitter))
                         continue;
 
-                    var effectiveRange = GetCommNextRange(part.PartName, transmitter.CommunicationRangeMeters);
+                    var effectiveRange = AntennaCatalog.GetRange(part.PartName, transmitter.CommunicationRangeMeters);
                     var transmitterActive = transmitter.IsTransmitterActive();
 
                     transmitterStates.Add(
@@ -129,45 +129,6 @@ namespace CommNextRedux
             if (meters >= 1_000_000d) return (meters / 1_000_000d).ToString("F2") + "Mm";
             if (meters >= 1_000d) return (meters / 1_000d).ToString("F1") + "km";
             return meters.ToString("F0") + "m";
-        }
-
-        private static double GetCommNextRange(string partName, double stockRange)
-        {
-            if (string.IsNullOrEmpty(partName))
-                return stockRange;
-
-            if (partName.Equals("antenna_0v_16", StringComparison.OrdinalIgnoreCase) ||
-                partName.Equals("antenna_0v_16s", StringComparison.OrdinalIgnoreCase))
-                return 500_000d;
-
-            if (partName.Equals("antenna_1v_dish_hg5", StringComparison.OrdinalIgnoreCase))
-                return 5_000_000d;
-
-            if (partName.Equals("antenna_0v_dish_ra-2", StringComparison.OrdinalIgnoreCase) ||
-                partName.Equals("antenna_1v_parabolic_dts-m1", StringComparison.OrdinalIgnoreCase))
-                return 2_000_000_000d;
-
-            if (partName.Equals("antenna_0v_dish_ra-15", StringComparison.OrdinalIgnoreCase) ||
-                partName.Equals("antenna_1v_dish_hg55", StringComparison.OrdinalIgnoreCase) ||
-                partName.Equals("antenna_1v_dish_hg55s", StringComparison.OrdinalIgnoreCase))
-                return 15_000_000_000d;
-
-            if (partName.Equals("antenna_1v_dish_ra-100", StringComparison.OrdinalIgnoreCase) ||
-                partName.Equals("antenna_1v_dish_88-88", StringComparison.OrdinalIgnoreCase))
-                return 100_000_000_000d;
-
-            return stockRange;
-        }
-
-        private static bool IsStockRelayPart(string partName)
-        {
-            if (string.IsNullOrEmpty(partName))
-                return false;
-
-            return partName.Equals("antenna_1v_dish_hg5", StringComparison.OrdinalIgnoreCase) ||
-                   partName.Equals("antenna_0v_dish_ra-2", StringComparison.OrdinalIgnoreCase) ||
-                   partName.Equals("antenna_0v_dish_ra-15", StringComparison.OrdinalIgnoreCase) ||
-                   partName.Equals("antenna_1v_dish_ra-100", StringComparison.OrdinalIgnoreCase);
         }
 
         private static void SetMax(Dictionary<int, double> values, int index, double range)
