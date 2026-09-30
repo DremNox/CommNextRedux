@@ -58,6 +58,33 @@ namespace CommNextRedux
 
         internal static int NodeCount => Nodes.Count;
 
+        internal static List<ConnectionGraphNode> GetGraphNodes()
+        {
+            var result = new List<ConnectionGraphNode>();
+            try
+            {
+                if (Manager == null || AllNodesField == null)
+                    return result;
+
+                var enumerable = AllNodesField.GetValue(Manager) as IEnumerable;
+                if (enumerable == null)
+                    return result;
+
+                foreach (var item in enumerable)
+                {
+                    var node = item as ConnectionGraphNode;
+                    if (node != null)
+                        result.Add(node);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log?.LogError("[CommNextRedux] GetGraphNodes: " + ex);
+            }
+
+            return result;
+        }
+
         internal static void Attach(CommNetManager manager)
         {
             Manager = manager;
