@@ -189,6 +189,16 @@ namespace CommNextRedux
             ManagedCommNextGraph.Invalidate();
         }
 
+        internal static string GetTransmitterSummary(VesselComponent vessel)
+        {
+            if (vessel == null) return "sin nave";
+
+            NetworkNode node;
+            return Nodes.TryGetValue(vessel.GlobalId, out node)
+                ? node.TransmitterSummary
+                : "pendiente";
+        }
+
         internal static string GetBandSummary(VesselComponent vessel)
         {
             if (vessel == null) return "Sin bandas";
