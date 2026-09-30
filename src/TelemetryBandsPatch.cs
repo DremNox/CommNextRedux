@@ -39,6 +39,9 @@ namespace CommNextRedux
 
                 foreach (var part in partOwner.Parts)
                 {
+                    if (IsStockRelayPart(part.PartName))
+                        isRelay = true;
+
                     Data_NextRelay relayData;
                     if (part.TryGetModuleData<PartComponentModule_NextRelay, Data_NextRelay>(out relayData))
                     {
@@ -94,6 +97,17 @@ namespace CommNextRedux
             {
                 CommNetBridge.Log?.LogError("[CommNextRedux] Telemetry band refresh: " + ex);
             }
+        }
+
+        private static bool IsStockRelayPart(string partName)
+        {
+            if (string.IsNullOrEmpty(partName))
+                return false;
+
+            return partName.Equals("antenna_1v_dish_hg5", StringComparison.OrdinalIgnoreCase) ||
+                   partName.Equals("antenna_0v_dish_ra-2", StringComparison.OrdinalIgnoreCase) ||
+                   partName.Equals("antenna_0v_dish_ra-15", StringComparison.OrdinalIgnoreCase) ||
+                   partName.Equals("antenna_1v_dish_ra-100", StringComparison.OrdinalIgnoreCase);
         }
 
         private static void SetMax(Dictionary<int, double> values, int index, double range)
