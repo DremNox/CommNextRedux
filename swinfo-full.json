@@ -1,0 +1,16 @@
+{
+  "spec": "2.0",
+  "mod_id": "CommNextRedux",
+  "name": "CommNext Redux",
+  "author": "DremNox / Kerbalight",
+  "description": "Full port preview of CommNext for KSP2 Redux.",
+  "version": "0.1.0-preview.1",
+  "ksp2_version": { "min": "*", "max": "*" },
+  "dependencies": [
+    {
+      "id": "SpaceWarp2",
+      "version": { "min": "2.0.0", "max": "*" }
+    }
+  ],
+  "main_assembly": "CommNextRedux.Full.0.1.0.dll"
+}
