@@ -44,6 +44,7 @@ public class MapToolbarWindowController : MonoBehaviour
     private Button _rulersButton = null!;
     private TooltipManipulator _rulersTooltip = null!;
     private Button _vesselReportButton = null!;
+    private Button _previewButton = null!;
     public VisualElement Root => _root;
 
     public float Width => _root.resolvedStyle.width;
@@ -81,7 +82,8 @@ public class MapToolbarWindowController : MonoBehaviour
 
     public void UpdateButtonState()
     {
-        if (!_isUiInitialized || _linesButton == null || _rulersButton == null || _vesselReportButton == null)
+        if (!_isUiInitialized || _linesButton == null || _rulersButton == null ||
+            _vesselReportButton == null || _previewButton == null)
             return;
 
         // 1. Connections
@@ -166,6 +168,18 @@ public class MapToolbarWindowController : MonoBehaviour
             _vesselReportButton.text = "REP";
             _vesselReportButton.style.color = new Color(0.82f, 0.85f, 0.91f, 1f);
         }
+
+        // 4. Antenna/body range preview (upstream issue #32)
+        if (MainUIManager.Instance.RangePreviewWindow?.IsWindowOpen == true)
+        {
+            _previewButton.text = "PREV ON";
+            _previewButton.style.color = new Color(0.10f, 1f, 0.40f, 1f);
+        }
+        else
+        {
+            _previewButton.text = "PREV";
+            _previewButton.style.color = new Color(0.82f, 0.85f, 0.91f, 1f);
+        }
     }
 
     /// <summary>
@@ -241,6 +255,15 @@ public class MapToolbarWindowController : MonoBehaviour
             }
 
             MainUIManager.Instance.VesselReportWindow!.OpenForVessel(vessel);
+        };
+
+        _previewButton = _root.Q<Button>("preview-button");
+        _previewButton.AddManipulator(new TooltipManipulator("Previsualizar alcance por cuerpo y antena"));
+        _previewButton.clicked += () =>
+        {
+            var preview = MainUIManager.Instance.RangePreviewWindow;
+            if (preview == null) return;
+            preview.IsWindowOpen = !preview.IsWindowOpen;
         };
 
         _isUiInitialized = true;
