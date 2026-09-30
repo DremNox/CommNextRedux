@@ -1,4 +1,5 @@
-﻿using UitkForKsp2.API;
+﻿using System.Collections;
+using UitkForKsp2.API;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -36,15 +37,38 @@ public class TooltipWindowController : MonoBehaviour
     public void OnEnable()
     {
         _window = GetComponent<UIDocument>();
+        StartCoroutine(InitializeWhenVisualTreeReady());
+    }
+
+    private IEnumerator InitializeWhenVisualTreeReady()
+    {
+        const int maxFrames = 120;
+        var frame = 0;
+
+        while ((_window == null || _window.rootVisualElement == null ||
+                _window.rootVisualElement.childCount == 0) && frame++ < maxFrames)
+            yield return null;
+
+        if (_window == null || _window.rootVisualElement == null ||
+            _window.rootVisualElement.childCount == 0)
+        {
+            CommNextRedux.CommNetBridge.Log?.LogError(
+                "[CommNextRedux] Tooltip UXML was not instantiated after waiting for UI Toolkit.");
+            yield break;
+        }
+
         _root = _window.rootVisualElement[0];
 
         // Tooltip elements
         _tooltip = _root.Q<VisualElement>("tooltip");
-        _tooltipText = _tooltip.Q<Label>("tooltip__text");
+        _tooltipText = _tooltip?.Q<Label>("tooltip__text");
+        CommNextRedux.CommNetBridge.Log?.LogInfo("[CommNextRedux] Tooltip UI initialized.");
     }
 
     public void ToggleTooltip(bool isVisible, VisualElement target, string text = "")
     {
+        if (_root == null || _tooltip == null || _tooltipText == null) return;
+
         if (isVisible)
         {
             _tooltipText.text = text;
@@ -60,6 +84,7 @@ public class TooltipWindowController : MonoBehaviour
 
     public bool IsHiDPI()
     {
-        return UnityEngine.Screen.width / _root.worldBound.width > 1.5;
+        return _root != null && _root.worldBound.width > 0 &&
+               UnityEngine.Screen.width / _root.worldBound.width > 1.5;
     }
 }
