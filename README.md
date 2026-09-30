@@ -1,55 +1,31 @@
-# CommNext Redux
+﻿# CommNext Redux
 
-Port de [CommNext](https://github.com/Kerbalight/CommNext) a **Kerbal Space Program 2 Redux**.
+Full port of Kerbalight/CommNext to KSP2 Redux / SpaceWarp2.
 
-## Estado actual: v0.1.0-preview.1
+## v0.1.0-alpha
 
-Esta preview integra el codigo original de CommNext sobre un nucleo adaptado a Redux.
+This is the first full-source alpha. The original CommNext source tree has been brought into the Redux build instead of only porting isolated features.
 
-Incluye:
+Included:
+- Redux-native CommNet bootstrap and lifecycle.
+- Authoritative CommNext routing.
+- Planetary occlusion.
+- X / S / K / Ka / V band model.
+- Relay / modulator modules and relay EC logic.
+- Effective original CommNext antenna ranges.
+- KSC source handling.
+- Original NetworkManager API adapted onto the Redux graph.
+- Original ConnectionsRenderer and map ruler code compiled.
+- Original CommNext UITK controls and UI controllers compiled.
+- Original commnext_ui.bundle is packaged and loaded through a Redux compatibility layer.
+- Original localization and native library are packaged.
+- Legacy BepInEx / SpaceWarp / UITKForKsp2 calls are bridged through Redux compatibility shims.
+- Diagnostic IMGUI remains available with Alt+C as a fallback.
 
-- Red CommNext autoritativa sobre CommNetManager de Redux.
-- Oclusion por cuerpos celestes.
-- Rutas KSC -> relay -> nave.
-- Bandas X / S / K / Ka / V.
-- Rangos originales de CommNext.
-- Relay y Modulator en PAM mediante Patch Manager Lua.
-- Consumo electrico de relays.
-- UI Toolkit original de CommNext.
-- Toolbar de mapa.
-- Vessel Report.
-- Filtros, ordenacion y signal strength.
-- Renderer original de conexiones.
-- Rulers de alcance.
-- Tooltips y controles UI originales.
-- Assets y localizaciones originales.
-- Persistencia de estado de la UI.
-- Fallbacks Redux para APIs privadas/renombradas.
+Repository layout:
+- src/Redux/ â€” Redux-native bridge, authoritative routing, compatibility shims.
+- src/FullPort/ â€” adapted source tree from the original CommNext project.
 
-La antigua ventana IMGUI de diagnostico queda oculta por defecto.
-
-## Fuente
-
-El port completo esta en:
-
-- `src-full/Original`: codigo original adaptado.
-- `src-full/ReduxCore`: nucleo de compatibilidad Redux.
-- `src-full/Compat`: adaptadores para APIs antiguas.
-- `src-full/UnityControls`: controles UI originales.
-- `patches/commnext_modules.lua`: inyeccion Redux de Relay/Modulator.
-
-El script `build-full.ps1` construye la DLL completa.
-
-## Instalacion
-
-Descarga la ultima release preview y copia `CommNextRedux` dentro de:
-
-`<KSP2>/mods/`
-
-Requiere Redux / SpaceWarp2.
-
-## Upstream y licencia
-
-CommNext original: https://github.com/Kerbalight/CommNext
-
-Se conserva la licencia MIT y la atribucion del proyecto original.
+Upstream / license:
+Original project: https://github.com/Kerbalight/CommNext
+The original MIT license and attribution are preserved.
