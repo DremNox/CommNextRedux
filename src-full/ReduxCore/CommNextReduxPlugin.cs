@@ -30,7 +30,7 @@ namespace CommNextRedux
         {
             _log = SWLogger;
             CommNetBridge.Log = _log;
-            _log.LogInfo("[CommNextRedux] 0.1.0-preview.7 pre-initialized");
+            _log.LogInfo("[CommNextRedux] 0.1.0-preview.8 pre-initialized");
         }
 
         public override void OnInitialized()
@@ -62,7 +62,7 @@ namespace CommNextRedux
 
             FullPortBootstrap.Initialize();
 
-            _log.LogInfo("[CommNextRedux] 0.1.0-preview.7 initialized; original CommNext systems enabled");
+            _log.LogInfo("[CommNextRedux] 0.1.0-preview.8 initialized; original CommNext systems enabled");
             RefreshState();
         }
 
@@ -140,7 +140,7 @@ namespace CommNextRedux
         private void OnGUI()
         {
             if (!_visible || !_showWindowScene || _vessel == null) return;
-            _window = GUI.Window(728431, _window, DrawWindow, "CommNext Redux 0.1.0-preview.7 [debug]");
+            _window = GUI.Window(728431, _window, DrawWindow, "CommNext Redux 0.1.0-preview.8 [debug]");
         }
 
         private void DrawWindow(int id)
