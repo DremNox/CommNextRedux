@@ -166,7 +166,6 @@ public class MapToolbarWindowController : MonoBehaviour
             _vesselReportButton.text = "REP";
             _vesselReportButton.style.color = new Color(0.82f, 0.85f, 0.91f, 1f);
         }
-
     }
 
     /// <summary>
