@@ -16,7 +16,7 @@ namespace CommNextRedux
 
         internal static VisualElement BuildMapToolbar()
         {
-            var root = Box("toolbar", 232, 42);
+            var root = Box("toolbar", 174, 42);
             root.style.flexDirection = FlexDirection.Row;
             root.style.alignItems = Align.Center;
             root.style.justifyContent = Justify.SpaceAround;
@@ -26,67 +26,6 @@ namespace CommNextRedux
             root.Add(ToolbarButton("lines-button", "NET"));
             root.Add(ToolbarButton("rulers-button", "RNG"));
             root.Add(ToolbarButton("vessel-report-button", "REP"));
-            root.Add(ToolbarButton("preview-button", "PREV"));
-
-            return root;
-        }
-
-        internal static VisualElement BuildRangePreview()
-        {
-            var root = Box("range-preview-root", 330, 178);
-            root.style.paddingLeft = 10;
-            root.style.paddingRight = 10;
-            root.style.paddingTop = 8;
-            root.style.paddingBottom = 8;
-
-            var header = Row();
-            header.style.height = 30;
-            header.style.justifyContent = Justify.SpaceBetween;
-
-            var title = new Label("PREVIEW DE ALCANCE");
-            title.style.color = Accent;
-            title.style.fontSize = 13;
-            header.Add(title);
-
-            var close = new Button { name = "close-button", text = "X" };
-            StyleSmallButton(close, 28);
-            header.Add(close);
-            root.Add(header);
-
-            var bodyRow = Row();
-            bodyRow.style.height = 38;
-            var bodyLabel = new Label("CUERPO");
-            bodyLabel.style.width = 78;
-            bodyLabel.style.fontSize = 10;
-            bodyLabel.style.color = Muted;
-            bodyRow.Add(bodyLabel);
-            var bodyDropdown = new DropdownField { name = "preview-body-dropdown" };
-            bodyDropdown.style.flexGrow = 1;
-            bodyRow.Add(bodyDropdown);
-            root.Add(bodyRow);
-
-            var antennaRow = Row();
-            antennaRow.style.height = 38;
-            var antennaLabel = new Label("ANTENA");
-            antennaLabel.style.width = 78;
-            antennaLabel.style.fontSize = 10;
-            antennaLabel.style.color = Muted;
-            antennaRow.Add(antennaLabel);
-            var antennaDropdown = new DropdownField { name = "preview-antenna-dropdown" };
-            antennaDropdown.style.flexGrow = 1;
-            antennaRow.Add(antennaDropdown);
-            root.Add(antennaRow);
-
-            var range = new Label("Alcance: -") { name = "preview-range-label" };
-            range.style.marginTop = 7;
-            range.style.color = Text;
-            root.Add(range);
-
-            var type = new Label("X Band") { name = "preview-type-label" };
-            type.style.marginTop = 3;
-            type.style.fontSize = 11;
-            type.style.color = Muted;
-            root.Add(type);
 
             return root;
         }
