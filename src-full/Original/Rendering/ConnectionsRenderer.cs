@@ -143,13 +143,21 @@ public class ConnectionsRenderer : MonoBehaviour
 
     public void SetRangePreview(IGGuid targetGuid, double rangeMeters, Color color)
     {
+        // Rebuild the preview object on every selection change.
+        //
+        // Reusing the existing MapSphereRulerComponent is unreliable in KSP2's
+        // Map3D hierarchy: changing Range/target can leave the old mesh visible
+        // at its previous scale/position. Hide + destroy it first, then create
+        // a fresh sphere on the next render tick.
+        DestroyRangePreviewObject();
+
         _rangePreviewTargetGuid = targetGuid;
         _rangePreviewMeters = rangeMeters;
         _rangePreviewColor = color;
         _rangePreviewEnabled = rangeMeters > 0d;
         MarkAsDirty();
 
-        Logger.LogInfo($"Range preview enabled target={targetGuid} range={rangeMeters:F0}m");
+        Logger.LogInfo($"Range preview rebuilt target={targetGuid} range={rangeMeters:F0}m");
     }
 
     public void ClearRangePreview()
@@ -162,7 +170,13 @@ public class ConnectionsRenderer : MonoBehaviour
     private void DestroyRangePreviewObject()
     {
         if (_rangePreviewObject != null)
+        {
+            // Destroy() is deferred until end-of-frame. Disabling the object first
+            // removes the previous preview immediately so it never overlaps the new
+            // body/range sphere while Unity finishes destruction.
+            _rangePreviewObject.SetActive(false);
             Destroy(_rangePreviewObject);
+        }
 
         _rangePreviewObject = null;
         _rangePreviewSphere = null;
