@@ -17,9 +17,6 @@ public class MainUIManager
     public VesselReportWindowController? VesselReportWindow { get; set; }
     private UIDocument _vesselReportDocument = null!;
 
-    public RangePreviewWindowController? RangePreviewWindow { get; set; }
-    private UIDocument _rangePreviewDocument = null!;
-
     public TooltipWindowController TooltipWindow { get; set; } = null!;
     private UIDocument _tooltipDocument = null!;
 
@@ -37,11 +34,6 @@ public class MainUIManager
             CommNextRedux.ReduxUiFactory.BuildVesselReport());
         VesselReportWindow = _vesselReportDocument.gameObject.AddComponent<VesselReportWindowController>();
 
-        _rangePreviewDocument = Window.Create(
-            RangePreviewWindowController.WindowOptions,
-            CommNextRedux.ReduxUiFactory.BuildRangePreview());
-        RangePreviewWindow = _rangePreviewDocument.gameObject.AddComponent<RangePreviewWindowController>();
-
         // Tooltip is created last so it remains above the other windows.
         _tooltipDocument = Window.Create(
             TooltipWindowController.WindowOptions,
@@ -50,7 +42,6 @@ public class MainUIManager
 
         Logger.LogInfo(
             $"Redux-native UI documents created: toolbar={_mapToolbarDocument.rootVisualElement.childCount}, " +
-            $"report={_vesselReportDocument.rootVisualElement.childCount}, preview={_rangePreviewDocument.rootVisualElement.childCount}, " +
-            $"tooltip={_tooltipDocument.rootVisualElement.childCount}");
+            $"report={_vesselReportDocument.rootVisualElement.childCount}, tooltip={_tooltipDocument.rootVisualElement.childCount}");
     }
 }
